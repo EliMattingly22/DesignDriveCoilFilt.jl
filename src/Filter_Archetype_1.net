@@ -1,0 +1,22 @@
+* C:\Users\elima\.julia\dev\CircModDesign\src\Filter_Archetype_1.asc
+V1 N011 0 AC 1
+LFilt1 N002 N001 100u Rser=100m
+CLFilt_C1 N003 N002 400n
+RSrc N001 N011 1m
+LFilt2 N004 N003 100u Rser=100m
+CLFilt_C2 N005 N004 400n
+LCFilt_L N003 0 100u Rser=100m
+CFilt N003 0 400n
+LNotch N006 N013 10
+CNotch N013 0 1p
+LNotch_Tune N006 N005 1p
+LTee1 N007 N006 1p
+LTee2 N008 N007 1p
+CPar N007 0 1.5u
+CSer N009 N008 10
+CDrive N010 N009 66.7n
+LDrive N010 N012 596u
+RDrive N012 0 .75
+.ac oct 1k 1k 500k
+.backanno
+.end

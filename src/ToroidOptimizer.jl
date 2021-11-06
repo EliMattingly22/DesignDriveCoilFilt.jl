@@ -1,7 +1,3 @@
-include("FieldCalc.jl")
-# VecDist(X::Array) = [ X[2,1]-X[1,1], X[2,2]-X[1,2] , X[2,3]-X[1,3]]
-# #X is the 2 coordinates to take distance between in format of [x₁,y₁,z₁;x₂,y₂,z₂]
-
 
 abstract type Toroid end
 
@@ -91,8 +87,9 @@ function ToroidOptimizer(
     P = AlphaMat[Alpha-1, 4] # As above
 
     KFunk_D(k) =
-        (2 * pi)^0.5 * (S / (P^(3 / 2))) * k .^ (3 / 2) + 0.25 * k - LperL0 #From "The Optimal Form for Coreless Inductor", P. Murgatroyd IEEE TMI, 25 No. 3 1989
-    K = mybisect(KFunk_D, 0, 1e5, 50) #solving for ideal K with bisection method
+        abs.((2 * pi)^0.5 * (S / (P^(3 / 2))) * k .^ (3 / 2) + 0.25 * k - LperL0) #From "The Optimal Form for Coreless Inductor", P. Murgatroyd IEEE TMI, 25 No. 3 1989
+    Ktmp = optimize(KFunk_D, 0, 1e5) #solving for ideal K with bisection method
+    K = Ktmp.minimizer
     WireLength_D = K * Dia #Equation 6 in "Economic designs for..."
     Turns_D = (2 * pi * K / P)^(1 / 2) # Also from P. Murgatroyd, section 4, Eq. 20 in "Economic designs for single-layer toroidal inductors"
     # TurnsD = sqrt(2*pi*L/(T*μ*B)); #Turns needed in a D shaped core toroid
@@ -124,8 +121,9 @@ function ToroidOptimizer(
     ## Two-layer circular core
 
 
-    KFunk(k) = 0.2722 * k .^ (3 / 2) + 0.25 * k - LperL0 #From "The Optimal Form for Coreless Inductor", P. Murgatroyd IEEE TMI, 25 No. 3 1989
-    K = mybisect(KFunk, 0, 1e5, 50) #solving for ideal K with bisection method
+    KFunk(k) = abs.(0.2722 * k .^ (3 / 2) + 0.25 * k - LperL0) #From "The Optimal Form for Coreless Inductor", P. Murgatroyd IEEE TMI, 25 No. 3 1989
+    Kopt = optimize(KFunk, 0, 1e5) #solving for ideal K 
+    K = Kopt.minimizer
     WireLength = K * Dia
     Turns = 0.8165 * K^(1 / 2) # Also from P. Murgatroyd, section 2 in "Economic designs for single-layer toroidal inductors"
     R = WireLength / (2 * pi * Turns)# Equation 2 in "Economic designs for single-layer toroidal inductors",P. Murgatroyd
@@ -163,51 +161,29 @@ function ToroidOptimizer(
 
     MeanPathLength = (DCoreGeom.OD + DCoreGeom.ID) * pi
 
-    CoreFlux(
-        MeanPathLength,
-        Approx_EnclosedArea_DCore,
-        DCoreGeom.Turns;
-        CoreMu = CoreMu,
-        Current = 1e-3,
-        AirGapSize = 0,
-    )
 
 
-    Laa = μ * CircleGeom.Turns^2 * R^2 / (2 * T)#Another formula for inductance of circular
-    # toroid from hyperphysics
-    println("Target inductance is: $(round(LTarget*1e6)) μH")
-    println(
-        "Sanity check inductance is: $(round(SanityCheckInductance*1e6)) μH",
-    )
-    println("
-    FlatHeight     :$(round(DCoreGeom.FlatHeight*1000;sigdigits=2)) mm
-    MaxHeight      :$(round(DCoreGeom.MaxHeight*1000;sigdigits=2)) mm
-    RadiusAtPeak   :$(round(DCoreGeom.RadiusAtPeak*1000;sigdigits=2)) mm
-    ID             :$(round(DCoreGeom.ID*1000;sigdigits=2)) mm
-    OD             :$(round(DCoreGeom.OD*1000;sigdigits=2)) mm
-    Turns          :$(DCoreGeom.Turns) Turns
-    Layers         :$(DCoreGeom.Layers) Turns
-    WireLength     :$(round(DCoreGeom.WireLength;sigdigits=2)) meters
-    WireResist     :$(round(DCoreGeom.Resistance;sigdigits=2)) Ω")
+    Laa = μ * CircleGeom.Turns^2 * R^2 / (2 * T)#Another formula for inductance of circular toroid
+    # 
+    # println("Target inductance is: $(round(LTarget*1e6)) μH")
+    # println(
+    #     "Sanity check inductance is: $(round(SanityCheckInductance*1e6)) μH",
+    # )
+    # println("
+    # FlatHeight     :$(round(DCoreGeom.FlatHeight*1000;sigdigits=2)) mm
+    # MaxHeight      :$(round(DCoreGeom.MaxHeight*1000;sigdigits=2)) mm
+    # RadiusAtPeak   :$(round(DCoreGeom.RadiusAtPeak*1000;sigdigits=2)) mm
+    # ID             :$(round(DCoreGeom.ID*1000;sigdigits=2)) mm
+    # OD             :$(round(DCoreGeom.OD*1000;sigdigits=2)) mm
+    # Turns          :$(DCoreGeom.Turns) Turns
+    # Layers         :$(DCoreGeom.Layers) Turns
+    # WireLength     :$(round(DCoreGeom.WireLength;sigdigits=2)) meters
+    # WireResist     :$(round(DCoreGeom.Resistance;sigdigits=2)) Ω")
     CoilGeom = Geom(DCoreGeom, CircleGeom, General)
     return CoilGeom
 end
 
-function CoreFlux(Le, Ae, Turns; CoreMu = 1, Current = 1, AirGapSize = 0)
-    ## This assumes a simple geometry where the gap area equals Ferrite area
-    μ_o = 4 * pi * 1e-7
-    μ = μ_o * CoreMu
-    Φ =
-        μ_o * Turns * Current /
-        ((Le - AirGapSize) / (CoreMu * Ae) + AirGapSize / Ae)
-    L = Turns * Φ
-    Flux = Φ / Ae
-    println("The total B field within the core given $(Current*1000)mA
-     is $(round(Flux*1000;sigdigits=2))mT")
-    println("~~~~~~~~~~~~")
-    return Flux
 
-end
 
 function Length2Resist(L, Diam; ρ = 1.68e-8, FillFac = 1)
     if Diam > 0.1
@@ -276,69 +252,8 @@ function DCoreGeom(r₁, r₂; dr = 0.0001,NPts = nothing,PlotOn=false,UpsampleP
     return r, z
 end
 
-function DCore_PointPath(r₁, r₂; NPts = 100)
-    r, z = DCoreGeom(r₁, r₂; NPts = NPts*10,PlotOn=false)
-    CumulativeDist = 0
-    for i in 1:(length(r)-1)
-        CumulativeDist += sqrt((r[i+1]-r[i])^2+(z[i+1]-z[i])^2)
-    end
-    TargetDist = CumulativeDist/(NPts+1)
-    rᵣ = [r[1]]
-    zᵣ = [z[1]]
-    CumulativeDist2 = 0
-    for i in 1:(length(r)-1)
-        CumulativeDist2 += sqrt((r[i+1]-r[i])^2+(z[i+1]-z[i])^2)
-        if CumulativeDist2>TargetDist
-            push!(rᵣ,r[i])
-            push!(zᵣ,z[i])
-            CumulativeDist2 = 0
-        end
-    end
-    
-
-    PointPathZeros = zeros(size(rᵣ))
-    PointPath = hcat(rᵣ,zᵣ,PointPathZeros)
-    return PointPath
-end
-
-function FieldMapDToroid(r₁, r₂; NPts = 100, TestLayers = 20)
-
-    PointPath = DCore_PointPath(r₁, r₂;NPts = NPts)
-    FieldMapPointPath(PointPath, TestLayers; WeightRadius = true, InvWeights = true)
-end
 
 
-
-"""
-RectCoords=[ 1   2.5 0
-         5   2.5 0
-         5  -2.5 0
-         1  -2.5 0]
-
-         Dr₁ = 1
-         Dr₂ = 5
-
-         Cr₁ = 2
-         Cr₂ = 2
-         CircCenter = [3,0,0]
-         CompareD_Circ_Rect_Toroid(Dr₁, Dr₂,RectCoords,Cr₁, Cr₂,CircCenter,20)
-
-"""
-function CompareD_Circ_Rect_Toroid(Dr₁, Dr₂,RectCoords,Cr₁, Cr₂,CircCenter,TestLayers = 20)
-    figure(75)
-    FieldMapDToroid(Dr₁,Dr₂)
-
-
-    figure(76)
-    R_PointPath = MakeRectPointPath(RectCoords;NElement = 50, PlotOn=false)
-    FieldMapPointPath(R_PointPath, 20; WeightRadius = true,InvWeights = true)
-
-     figure(77)
-    C_PointPath = MakeEllip(Cr₁,Cr₂;Center = CircCenter,NPts=100)
-    C_PointPath = reverse(C_PointPath,dims=1)
-FieldMapPointPath(C_PointPath, 20; WeightRadius = true,InvWeights = true)
-
-end
 
 """
 This function takes in the parameters of a circular Rogowski coil

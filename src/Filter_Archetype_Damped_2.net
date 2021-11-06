@@ -1,0 +1,26 @@
+* C:\Users\elima\.julia\dev\CircModDesign\src\Filter_Archetype_Damped_2.asc
+V1 N013 0 AC 1
+LFilt1 N006 N005 100u Rser=100m
+CLFilt_C1 N001 N006 400n
+RSrc N005 N013 1m
+LFilt2 N007 N001 100u Rser=100m
+CLFilt_C2 N002 N007 400n
+LCFilt_L N001 0 100u Rser=100m
+CFilt N001 0 400n
+LNotch N003 N015 10
+CNotch N015 0 1p
+LNotch_Tune N003 N002 1p
+LTee1 N009 N004 1p
+LTee2 N010 N009 1p
+CPar N009 0 1.5u
+CSer N011 N010 10
+CDrive N012 N011 66.7n
+LDrive N012 N014 596u
+RDrive N014 0 .75
+RDamp1 N002 N001 1Meg
+LDamp N008 N003 1p
+CDamp N004 N008 10
+RDamp2 N004 N003 1Meg
+.ac oct 1k 1k 500k
+.backanno
+.end

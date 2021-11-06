@@ -1,4 +1,4 @@
-using Gtk, DataFrames,PyPlot
+using Gtk, DataFrames
 
 """
 This function takes in a file path/name and exports a dataframe consisting of the circuit parameters

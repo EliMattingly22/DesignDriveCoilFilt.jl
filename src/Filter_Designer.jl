@@ -1,8 +1,4 @@
-# using Optim
-# using PyPlot
-# using FFTW
-# using ACME
-# using ElectricalEngineering
+
 
 include("Load_LTSpice_Net.jl")
 include("RunAnalysis.jl")
@@ -143,7 +139,7 @@ function DesignDriveFilter(
 
             LTee_1 = ZeroVal
             LTee_1_ESR = ZeroVal
-            SerCap = ZeroVal
+            SerCap = 1e6
 
         elseif (Reactance_Load == 0)
             matchRatio = real(TargetZ) / real(ZDrive)
@@ -284,7 +280,7 @@ function CircModel_SPICE(DriveFreq, VSrc,
 
     if ArchetypeNetFileName === nothing
 
-        ArchetypeNetFileName = joinpath(dirname(pathof(CircModDesign)),"Filter_Archetype_Damped_2.net")
+        ArchetypeNetFileName = joinpath(dirname(pathof(DesignDriveCoilFilt)),"Filter_Archetype_Damped_2.net")
 
     end
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(ArchetypeNetFileName)
@@ -380,7 +376,8 @@ function ImpMatch_LLoad(TargetZ, ZDrive, Reactance_Load,ωDr)
 
 end
 
-function ImpMatch_CLoad(TargetZ, ZDrive, Reactance_Load,ωDr)
+function ImpMatch_CLoad(TargetZ, ZDrive, Reactance_Load,ωDr; WireDiam = 2e-3,
+    WireFillFac = 0.75)
     println("Load is capacitive")
         EquivSerC = abs.(1 / (Reactance_Load * ωDr))
         println(
@@ -393,7 +390,7 @@ function ImpMatch_CLoad(TargetZ, ZDrive, Reactance_Load,ωDr)
         LSer2 = Xs / (ωDr)
         LTee_2 = LSer2 + LSer
 
-        CParAct = findResPair((1 + Q^(-2)) * LSer2, DriveFreq)
+        CParAct = findResPair((1 + Q^(-2)) * LSer2, ωDr*2*π)
         LTee_2_Geom =
             ToroidOptimizer(WireDiam, LTee_2; CuFillFactor = WireFillFac)
         LTee_2_ESR = LTee_2_Geom.DCore.Resistance
@@ -408,9 +405,9 @@ This function determines the ideal frequency of a resonant RLC such that it can 
 
 """
 function findFilterFreq(Q,RLoad,L,C)
-f = ((Q*RLoad + √(Q^2*RLoad^2+4*L/C)) / (4*π*L) , (Q*RLoad - √(Q^2*RLoad^2+4*L/C)) / (4*π*L) )
+        f = ((Q*RLoad + √(Q^2*RLoad^2+4*L/C)) / (4*π*L) , (Q*RLoad - √(Q^2*RLoad^2+4*L/C)) / (4*π*L) )
 
-return maximum(f)
+        return maximum(f)
 end
 
 
@@ -673,128 +670,6 @@ function PlotImpedanceTransformList(ImpList; InitialImp = nothing, ArrHeadWidth 
     end
     phasor(PrevImp, color = ColorList[length(ImpList)+1])
     title("Admittance")
-end
-
-
-
-function CircModel_MatchingTFilt(DriveFreq, VSrc,
-    PlotSrcR,
-    RDrive,
-    NumDriveElements,
-    LDrive,
-    CDrive,
-    SerCap,
-    LTee_2,
-    LTee_2_ESR,
-    LTee_1,
-    LTee_1_ESR,
-    CParAct,
-    LFilt,
-    LFilt2_ESR,
-    LFilt1_ESR,
-    LFiltMatch_C,
-    CFilt,
-    CFiltMatch_L;
-    PlotOn = false
-
-)
-
-
-    circ = @circuit begin
-        j_in = voltagesource()
-        rs = resistor(PlotSrcR)
-        ESR = resistor(RDrive)
-        ESL = inductor(NumDriveElements * LDrive)
-        ESC = capacitor(CDrive / NumDriveElements)
-        MatchCSer = capacitor(SerCap)
-        LTee_2_mod = inductor(LTee_2)
-        LTee_2_ESRmod = resistor(LTee_2_ESR)
-        LTee_1_mod = inductor(LTee_1)
-        LTee_1_ESRmod = resistor(LTee_1_ESR)
-        CParAct_mod = capacitor(CParAct)
-        LFilt_mod = inductor(LFilt)
-        LFiltESR_mod = resistor(LFilt1_ESR)
-        LFilt_mod2 = inductor(LFilt)
-        LFiltESR_mod2 = resistor(LFilt1_ESR)
-        LFiltMatch_C_mod2 = capacitor(LFiltMatch_C)
-        CFilt_mod = capacitor(CFilt)
-        CFiltMatch_L_mod = inductor(CFiltMatch_L)
-        LFilt2_ESR_mod = resistor(LFilt2_ESR)
-        LFiltMatch_C_mod = capacitor(LFiltMatch_C)
-        i_out = currentprobe()
-
-        j_in[+] ⟷ rs[1] #\longleftrightarrow
-        j_in[-] ⟷ gnd
-        rs[2] ⟷ LFiltESR_mod[1]
-        LFiltESR_mod[2] ⟷ LFilt_mod[1]
-        LFilt_mod[2] ⟷ LFiltMatch_C_mod[1]
-        LFiltMatch_C_mod[2] ⟷ CFilt_mod[1]
-        LFiltMatch_C_mod[2] ⟷ CFiltMatch_L_mod[1]
-        CFiltMatch_L_mod[2] ⟷ LFilt2_ESR_mod[1]
-        LFilt2_ESR_mod[2] ⟷ gnd
-        CFilt_mod[2] ⟷ gnd
-        LFiltMatch_C_mod[2] ⟷ LFiltESR_mod2[1]
-        LFiltESR_mod2[2] ⟷ LFilt_mod2[1]
-        LFilt_mod2[2] ⟷ LFiltMatch_C_mod2[1]
-        LFiltMatch_C_mod2[2] ⟷ LTee_1_mod[1]
-        LTee_1_mod[2] ⟷ LTee_1_ESRmod[1]
-        LTee_1_ESRmod[2] ⟷ CParAct_mod[1]
-        CParAct_mod[2] ⟷ gnd
-        LTee_1_ESRmod[2] ⟷ LTee_2_mod[1]
-        LTee_2_mod[2] ⟷ LTee_2_ESRmod[1]
-        LTee_2_ESRmod[2] ⟷ ESC[1]
-        ESC[2] ⟷ MatchCSer[1]
-        MatchCSer[2] ⟷ ESL[1]
-        ESL[2] ⟷ ESR[1]
-        ESR[2] ⟷ i_out[+]
-        i_out[-] ⟷ gnd
-    end
-    println("Starting to model")
-    fs_model = 1e6
-    model = DiscreteModel(circ, 1 / fs_model)
-    FreqList = 1000:100:100e3
-    NumPeriods = 1000
-    df = FreqList[2] - FreqList[1]
-    Mags = zeros(length(FreqList), 1)
-    WindowHanning(N) =
-        0.5 .- 0.5 .* cos.(2 .* pi .* collect(0:(N-1)) ./ (N - 1))
-    println("Starting to run sim")
-    for F in FreqList
-        y = run!(
-            model,
-            [
-                VSrc .* sin(2π * F / fs_model * n) for c = 1:1,
-                n = 1:NumPeriods*fs_model/F
-            ],
-        )
-        y = y[:] .* WindowHanning(length(y))[:]
-        FFT_y = abs.(fft(y)) / length(y) .* 4
-
-        Mags[Int((F - FreqList[1]) / df)+1] = maximum(FFT_y)
-    end
-
-
-    y2 = run!(
-        model,
-        [
-            VSrc .* sin(2π * DriveFreq / fs_model * n) for c = 1:1,
-            n = 1:NumPeriods*fs_model/DriveFreq
-        ],
-    )
-    y2 = y2[:] .* WindowHanning(length(y2))[:]
-    FFT_y2 = abs.(fft(y2)) / length(y2) .* 4
-
-    AmpsPerVolt = maximum(FFT_y2)
-
-    if PlotOn
-        semilogy(FreqList, Mags[:])
-        xlabel("Frequency")
-        ylabel("Drive Current")
-        semilogy(DriveFreq, AmpsPerVolt,"r*")
-    end
-
-    println("Tx current per $VSrc Volts is $(round(AmpsPerVolt,sigdigits=3)) Amps")
-    return AmpsPerVolt
 end
 
 
