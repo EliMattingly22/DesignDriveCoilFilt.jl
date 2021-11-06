@@ -40,7 +40,7 @@ function DesignDriveFilter_OptimDrift(
         FilterZ = Zin)
     
         
-        CircModDesign.DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+        DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
         
         return SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
     end
