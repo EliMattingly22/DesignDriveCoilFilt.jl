@@ -24,7 +24,8 @@ function DesignDriveFilter_OptimDrift(
     DetermineFreq = false,
     AddNotchFreq = nothing,
     FilterZ = TargetZ,
-    RDampVal = FilterZ
+    RDampVal = FilterZ,
+    PerturbTxReactance = nothing
 )
 
     
@@ -107,7 +108,8 @@ function DesignDriveFilter(
     DetermineFreq = false,
     AddNotchFreq = nothing,
     FilterZ = TargetZ,
-    RDampVal = FilterZ
+    RDampVal = FilterZ,
+    PerturbTxReactance = nothing
 )
 
 
@@ -174,6 +176,19 @@ function DesignDriveFilter(
         LTee_1 = ZeroVal
         LTee_1_ESR = ZeroVal
         SerCap = 1e6
+    end
+
+    if ~(PerturbTxReactance === nothing)
+        PerturbInductance = PerturbTxReactance/ωDr
+        LTee_2 = LTee_2+PerturbInductance
+        ZDrive = RDrive * NumDriveElements +
+        im * ωDr * LDrive * NumDriveElements +
+        NumDriveElements ./ (im * 2 * pi * DriveFreq * CDrive)
+        Z_SerMatchingSect = LTee_2_ESR+im * ωDr * LTee_2+ 1/(im*ωDr*SerCap)
+        ZSerTot = Z_SerMatchingSect+ZDrive
+        Z_TotMatchSect = Par([Z_Cap(CParAct,DriveFreq),ZSerTot])
+        LTee_1 = abs.(-1*imag(Z_TotMatchSect)/ωDr)
+
     end
     println("L Tee 1 =  $(round(LTee_1*1e6;sigdigits=3))μH ")
     println("L Tee 2 =  $(round(LTee_2*1e6;sigdigits=3))μH ")
