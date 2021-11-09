@@ -21,7 +21,7 @@ function LTSpiceLoad(FileName=nothing)
                 Spaces = vcat(findall(" ",Lines[i])...)
                 
                 if ~(Lines[i][1]=='*')
-                        println(Lines[i])
+                        # println(Lines[i])
                 end
                 if (Lines[i][1]=='R')|(Lines[i][1]=='L')|(Lines[i][1]=='C')
                         if length(Spaces)==3

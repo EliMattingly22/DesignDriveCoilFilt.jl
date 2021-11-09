@@ -3,7 +3,7 @@ using FFTW,Gtk,PyPlot,Optim
 using LinearAlgebra
 using PyPlot
 
-using Interpolations
+# using Interpolations
 
 include("Load_LTSpice_Net.jl")
 include("RunAnalysis.jl")

@@ -1,5 +1,5 @@
-include("Load_LTSpice_Net.jl")
-include("SPICE2Matrix.jl")
+# include("Load_LTSpice_Net.jl")
+# include("SPICE2Matrix.jl")
 
 
 """
@@ -19,9 +19,9 @@ function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothi
     end
 
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(FileName)
-    println(InputList)
+    # println(InputList)
     if inputs===nothing
-        println("No inputs given")
+        # println("No inputs given")
         inputs = zeros(length(InputList))
         inputs[end-(NumVSources-1):end] .= 1
     end
@@ -60,7 +60,7 @@ function DetermineTempCo(FileName=nothing, DriveFreq = 25e3, ComponentName = "Ld
     FreqList = 100:10:100e3,
     inputs = nothing,
     Θᵣ = 1, Θc = 1,
-    TCᵣ = 0.004, TCc = 0.0003,
+    TCᵣ = 0.004, TCc = -0.0003,
     InputScaling = 1)
 
 
@@ -70,9 +70,9 @@ function DetermineTempCo(FileName=nothing, DriveFreq = 25e3, ComponentName = "Ld
     end
 
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(FileName)
-    println(InputList)
+    # println(InputList)
     if inputs===nothing
-        println("No inputs given")
+        # println("No inputs given")
         inputs = zeros(length(InputList))
         inputs[end-(NumVSources-1):end] .= (1*InputScaling)
     end
@@ -344,7 +344,7 @@ This function takes in:
 """
 function DetermineComponentsTempCoeffs(SPICE_DF,InputList,NumVSources,DriveFreq = 25e3, ComponentName = "LDrive";
     Θᵣ = 1, Θc = 1,
-    TCᵣ = 0.004, TCc = 0.0003,
+    TCᵣ = 0.004, TCc = -0.0003,
     InputScaling = 1,
     δppm = 900)
 

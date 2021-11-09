@@ -1,9 +1,9 @@
 
 
-include("Load_LTSpice_Net.jl")
-include("RunAnalysis.jl")
-include("SPICE2Matrix.jl")
-include("ToroidOptimizer.jl")
+# include("Load_LTSpice_Net.jl")
+# include("RunAnalysis.jl")
+# include("SPICE2Matrix.jl")
+# include("ToroidOptimizer.jl")
 
 
 """
@@ -29,35 +29,88 @@ function DesignDriveFilter_OptimDrift(
 )
 
     
-    
-    function WrapperFunk(Zin)
-    DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
-        LDrive,RDrive, Zin,DriveFreq;
-        CDrive = CDrive,
-        NumDriveElements = NumDriveElements,
-        WireDiam = WireDiam,
-        DetermineFreq=DetermineFreq,
-        AddNotchFreq = AddNotchFreq,
-        FilterZ = Zin)
+        function WrapperFunkZin(Zin)
+            DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+            LDrive,RDrive, Zin,DriveFreq;
+            CDrive = CDrive,
+            NumDriveElements = NumDriveElements,
+            WireDiam = WireDiam,
+            DetermineFreq=DetermineFreq,
+            AddNotchFreq = AddNotchFreq,
+            FilterZ = Zin)
+        
+            
+            DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+            if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
+                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+            else
+                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+            end
+
+            return Drift
+        end
     
         
-        DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+        function WrapperFunk_Per(PerturbationX)
+            DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+            LDrive,RDrive, TargetZ,DriveFreq;
+            CDrive = CDrive,
+            NumDriveElements = NumDriveElements,
+            WireDiam = WireDiam,
+            DetermineFreq=DetermineFreq,
+            AddNotchFreq = AddNotchFreq,
+            FilterZ = TargetZ,
+            PerturbTxReactance = PerturbationX)
         
-        return SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-    end
+            
+            DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+            if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
+                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+            else
+                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+            end
 
-    MinZ = optimize(WrapperFunk,10,15)
+            return Drift
+        end
+    
+    
 
-    DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+    if  (PerturbTxReactance === nothing)
+        MinZ = optimize(WrapperFunkZin,5,25)
+        DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
         LDrive,RDrive, MinZ.minimizer,DriveFreq;
         CDrive = CDrive,
         WireDiam = WireDiam,
         DetermineFreq=DetermineFreq,
         AddNotchFreq = AddNotchFreq,
         FilterZ = MinZ.minimizer)
-    
+        MinZVal = MinZ.minimizer
         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-    return MinZ.minimizer, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+        return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+    else
+        println("Perturbation given")
+        PerVec = -2:.1:2
+        DriftVec = zeros(length(PerVec),1)
+        for i in 1:length(PerVec)
+            println(i)
+            DriftVec[i] =WrapperFunk_Per(PerVec[i])
+        end
+        MinIndex = findfirst(x-> x==minimum(DriftVec),DriftVec)
+        MinXVal = PerVec[MinIndex]
+
+        DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+        LDrive,RDrive, TargetZ,DriveFreq;
+        CDrive = CDrive,
+        WireDiam = WireDiam,
+        DetermineFreq=DetermineFreq,
+        AddNotchFreq = AddNotchFreq,
+        FilterZ = TargetZ,
+        PerturbTxReactance = MinXVal)
+        
+        DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+        return MinXVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+    end
+
 end
 
 
