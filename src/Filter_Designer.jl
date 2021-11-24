@@ -125,6 +125,8 @@ This function takes in  the following parameters:
     TargetZ, Amplifier/target impedance to match to  (Ω)
 
     DriveFreq; drive frequency (Hz)
+The following are keyword arguments and should be entered after the first four (required) as;
+DesignDriveFilter(LDrive,RDrive,Amp_Z,DriveFreq; [kwarg] = value). See below for an example
 
     CDrive = 1e6, Any series capacitance with drive coil
 
@@ -134,13 +136,24 @@ This function takes in  the following parameters:
 
     WireFillFac = 0.75, If litz wire, this is the ratio of copper to air
 
+    PlotFTs = true, Plotting be default is true
+    VSrc = 2, The source voltage for plotting
+    DetermineFreq = false, IF you have a fixed capacitor (CDrive has been set) you may want to search for an ideal drive freq. in which case, set this to true.
+    AddNotchFreq = nothing, This can be a single value of a notch frequency, or an array of length 2, the two values are the notch frequencies
+
+    FilterZ = TargetZ, The characteristic impedance of the filtering section
+    RDampVal = 100, [Ω] The damping resistor added in around the series L-C sections
+    PerturbTxReactance = nothing, an optional element to add some purturbation to the reactance of the drive coil, which effectively enables the user to tune where the operating point ends up on the transfer function (V in → I drive)
+
+
     Example (Copy/paste):
     RDrive = 400e-3
     LDrive = 400e-6
     Amp_Z = 4
     DriveFreq = 25e3
+    AddNotchFreqList = [DriveFreq*2, DriveFreq*3]
 
-    DesignDriveFilter(LDrive,RDrive,Amp_Z,DriveFreq)
+    DesignDriveFilter(LDrive,RDrive,Amp_Z,DriveFreq; AddNotchFreq = AddNotchFreqList)
 
 
 
@@ -161,7 +174,7 @@ function DesignDriveFilter(
     DetermineFreq = false,
     AddNotchFreq = nothing,
     FilterZ = TargetZ,
-    RDampVal = FilterZ,
+    RDampVal = 100,
     PerturbTxReactance = nothing
 )
 
@@ -268,13 +281,33 @@ function DesignDriveFilter(
     )
 
     if ~(AddNotchFreq===nothing)
-        LNotch, CNotch, LNotch_Tune = makeNotchSection(AddNotchFreq, DriveFreq, TargetZ;LVal = 100e-6)
+    
+        LNotch, CNotch, LNotch_Tune = makeNotchSection(AddNotchFreq[1], DriveFreq, TargetZ;LVal = 100e-6)
         LNotch_Geom =
                 ToroidOptimizer(WireDiam, LNotch; CuFillFactor = WireFillFac)
         LNotch_ESR = LNotch_Geom.DCore.Resistance
         LNotch_Tune_Geom =
                 ToroidOptimizer(WireDiam, LNotch_Tune; CuFillFactor = WireFillFac)
         LNotch_Tune_ESR = LNotch_Tune_Geom.DCore.Resistance
+        println("Adding notch")
+        if length(AddNotchFreq)==2
+            LNotch2, CNotch2, LNotch_Tune2 = makeNotchSection(AddNotchFreq[2], DriveFreq, TargetZ;LVal = 100e-6)
+            LNotch2_Geom =
+                    ToroidOptimizer(WireDiam, LNotch2; CuFillFactor = WireFillFac)
+            LNotch2_ESR = LNotch2_Geom.DCore.Resistance
+            LNotch_Tune = LNotch_Tune+LNotch_Tune2
+            LNotch_Tune_Geom =
+                    ToroidOptimizer(WireDiam, LNotch_Tune; CuFillFactor = WireFillFac)
+            LNotch_Tune_ESR = LNotch_Tune_Geom.DCore.Resistance
+            println("Adding second notch")
+        else
+            LNotch2 = 10
+            CNotch2 = 1e-12
+            LNotch2_ESR = 1e-3
+           
+            
+        end
+            
     else
         LNotch = 10
         CNotch = 1e-12
@@ -304,6 +337,9 @@ function DesignDriveFilter(
     LNotch,
     LNotch_ESR,
     CNotch,
+    LNotch2,
+    LNotch2_ESR,
+    CNotch2,
     LNotch_Tune,
     LNotch_Tune_ESR;
     PlotOn = PlotFTs,
@@ -336,6 +372,9 @@ function CircModel_SPICE(DriveFreq, VSrc,
     LNotch,
     LNotch_ESR,
     CNotch,
+    LNotch2,
+    LNotch2_ESR,
+    CNotch2,
     LNotch_Tune,
     LNotch_Tune_ESR;
     PlotOn = true,
@@ -359,6 +398,9 @@ function CircModel_SPICE(DriveFreq, VSrc,
     UpdateElementESR!(SPICE_DF,"LNotch_Tune",LNotch_Tune_ESR)
     UpdateElementESR!(SPICE_DF,"LNotch",LNotch_ESR)
     UpdateElementVal!(SPICE_DF,"CNotch",CNotch)
+    UpdateElementVal!(SPICE_DF,"LNotch2",LNotch2)
+    UpdateElementESR!(SPICE_DF,"LNotch2",LNotch2_ESR)
+    UpdateElementVal!(SPICE_DF,"CNotch2",CNotch2)
 
     UpdateElementVal!(SPICE_DF,"LFilt1",LFilt)
     UpdateElementVal!(SPICE_DF,"LFilt2",LFilt)
@@ -492,9 +534,9 @@ The outputs are:
     LTune(Henries)
 """
 function makeNotchSection(NotchFreq, DriveFreq, RMatch;LVal = 100e-6)
-CVal = findResPair(LVal, NotchFreq)
-Resid_Reactance = -1*(imag(Par(Z_Cap(CVal,DriveFreq)+Z_Ind(LVal,DriveFreq),RMatch)))
-LTune = Resid_Reactance/(2*π*DriveFreq)
+    CVal = findResPair(LVal, NotchFreq)
+    Resid_Reactance = -1*(imag(Par(Z_Cap(CVal,DriveFreq)+Z_Ind(LVal,DriveFreq),RMatch)))
+    LTune = Resid_Reactance/(2*π*DriveFreq)
     return LVal,CVal,LTune
 end
 
