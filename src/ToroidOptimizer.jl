@@ -266,12 +266,7 @@ This function takes in the parameters of a circular Rogowski coil
     ω: frequency (rad/sec) of current
 """
 function Rogowski_Calc(N,ID,OD;Current=1,μ=4*π*1e-7,ω = 25e3*2*π)
-    
-    # IStraightWire(r) = μ*Current/(2*π*r)
-    # CircWidth(x,ID,OD) = √(((OD-ID)/2)^2-(x-(ID+OD)/2)^2)
 
-    # dr =  (OD-ID)/1e4
-    # MutualInductance = N*sum([CircWidth(xx,ID,OD).*(IStraightWire(xx)).*dr for xx in (ID+dr):dr:OD][:])./Current #Derivation by integrating flux over area
     M₂₁ =μ*N/2*(ID+OD-2*√(ID*OD)) #From multiple sources. 
 
     V = ω*M₂₁*Current
