@@ -2,6 +2,19 @@
 This tool is to facilitate designing a drive coil filter for MPI. It is coded with [Julia](https://julialang.org/), an open-source language.
 
 It works by taking in the coil parameters (L, C, R) and then picking values for the matching network and filter. The tool then designs the ideal inductors (to include the ESR), simulates the full circuit, and outputs the values and transfer function.
+## Including the package:
+ In the Julia REPL run:
+ 
+ 1) Pkg> add https://github.com/EliMattingly22/DesignDriveCoilFilt.jl.git
+ 
+ (to get from the "normal" command REPL, which shows "julia>", press "]"
+ 
+ 2) julia> using DesignDriveCoilFilt
+
+This will install and precompile the package. These steps may take some time on the first run, due to all of the dependencies, but will be faster for future runs. 
+
+# Main functions:
+ 
 
 ## DesignDriveFilter
 
@@ -33,7 +46,7 @@ The main function is: *DesignDriveFilter* and the required inputs are:
 
 * DetermineFreq = false, If you want the solver to determine the most appropriate drive frequency set this to true. Must include a CDrive then
 
-* AddNotchFreq = nothing, If you want a notch frequency e.g. 2f0, or 3f0, set this to the frequency you want to notch in Hz
+* AddNotchFreq = nothing, If you want a notch frequency e.g. 2f0, or 3f0, set this to the frequency you want to notch in Hz. If this is a vector (length must be 1 or 2) it will make a notch at both values.
 
 * FilterZ = TargetZ, The characteristic impednace of the filter
 
@@ -65,5 +78,14 @@ The function is: *ToroidOptimizer* and the required inputs are:
 * Alpha = 2, Ratio of OD/ID. In theory, higher numbers are more efficient, but have more leakage. Higher numbers are also more challenging to wind. Should be between 2-5
 
 * CuFillFactor = 1, The packing factor of the wire. Solid magnet wire is 1, Litz will be <1
+
+### DCore_DetermineIdealInduct
+
+This function determines the (ideal) inductance of a D shaped toroid given geometry and turn count. 
+
+## Rogowski_Calc
+
+This function calculates the voltage per amp in a Rogowski coil being used as a current sensor. There are methods for rectangular coils, and circular cross-sections.
+
 
 
