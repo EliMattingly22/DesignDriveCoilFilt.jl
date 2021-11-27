@@ -14,7 +14,7 @@ function DesignDriveFilter_OptimDrift(
     RDrive,
     TargetZ,
     DriveFreq;
-    CDrive = 1e6,
+    CDrive = 2,
     NumDriveElements = 1,
     WireDiam = 2e-3,
     WireFillFac = 0.75,
@@ -25,10 +25,16 @@ function DesignDriveFilter_OptimDrift(
     AddNotchFreq = nothing,
     FilterZ = TargetZ,
     RDampVal = FilterZ,
-    PerturbTxReactance = nothing
+    PerturbTxReactance = nothing,
+    BruteForceOpt = false,
+    MinimizeDistToTrough = true
 )
 
-    
+        if MinimizeDistToTrough
+            println("minimizing distance to trough")
+        else
+            println("Minimizing drift coeff")
+        end
         function WrapperFunkZin(Zin)
             DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
             LDrive,RDrive, Zin,DriveFreq;
@@ -38,16 +44,21 @@ function DesignDriveFilter_OptimDrift(
             DetermineFreq=DetermineFreq,
             AddNotchFreq = AddNotchFreq,
             FilterZ = Zin)
-        
+            plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
             
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
-                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-            else
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+            else
+                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
             end
-
-            return Drift
+            TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
+            println("$TroughDist is the dist to trough, $Drift is the drift")
+            if MinimizeDistToTrough
+                return TroughDist
+            else
+                return Drift
+            end
         end
     
         
@@ -62,15 +73,20 @@ function DesignDriveFilter_OptimDrift(
             FilterZ = TargetZ,
             PerturbTxReactance = PerturbationX)
         
-            
+            plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
-                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-            else
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+            else
+                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
             end
-
-            return Drift
+            TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
+            println("$TroughDist is the dist to trough, $Drift is the drift")
+            if MinimizeDistToTrough
+                return TroughDist
+            else
+                return Drift
+            end
         end
     
     
@@ -89,15 +105,21 @@ function DesignDriveFilter_OptimDrift(
         return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
     else
         println("Perturbation given")
-        PerVec = -2:.1:2
-        DriftVec = zeros(length(PerVec),1)
-        for i in 1:length(PerVec)
-            println(i)
-            DriftVec[i] =WrapperFunk_Per(PerVec[i])
+        if BruteForceOpt
+            println("Scanning Reactance purturbations manually, finding min dist to trough")
+            PerVec = -2:.1:2
+            DriftVec = zeros(length(PerVec),1)
+            for i in 1:length(PerVec)
+                println(i)
+                DriftVec[i] =WrapperFunk_Per(PerVec[i])
+            end
+            MinIndex = findfirst(x-> x==minimum(DriftVec),DriftVec)
+            MinXVal = PerVec[MinIndex]
+        else
+            println("Using Optim to find min dist to trough")
+            MinXValOptimRes = optimize(WrapperFunk_Per,-2,2)
+            MinXVal = MinXValOptimRes.minimizer
         end
-        MinIndex = findfirst(x-> x==minimum(DriftVec),DriftVec)
-        MinXVal = PerVec[MinIndex]
-
         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
         LDrive,RDrive, TargetZ,DriveFreq;
         CDrive = CDrive,
@@ -164,7 +186,7 @@ function DesignDriveFilter(
     RDrive,
     TargetZ,
     DriveFreq;
-    CDrive = 1e6,
+    CDrive = 2,
     NumDriveElements = 1,
     WireDiam = 2e-3,
     WireFillFac = 0.75,
@@ -207,7 +229,7 @@ function DesignDriveFilter(
 
             LTee_1 = ZeroVal
             LTee_1_ESR = ZeroVal
-            SerCap = 1e6
+            SerCap = 2
 
         elseif (Reactance_Load == 0)
             matchRatio = real(TargetZ) / real(ZDrive)
@@ -221,7 +243,7 @@ function DesignDriveFilter(
             LTee_2_Geom =
                 ToroidOptimizer(WireDiam, LTee_2; CuFillFactor = WireFillFac)
             LTee_2_ESR = LTee_2_Geom.DCore.Resistance
-            SerCap = 1e6
+            SerCap = 2
         end
     else
 
@@ -820,4 +842,15 @@ function findMinima_Bounds(x,y;StartVal=nothing,StopVal=nothing)
     Min_y = ySubset[minIndex]
     return Min_x, Min_y
 
+end
+
+
+function findDriveDistFromTrough(fVec,CurVec,DriveFreq)
+    TroughFreq,val = findMinima_Bounds(fVec,abs.(CurVec);StartVal=(DriveFreq-1e3),StopVal=(DriveFreq+1e3))
+    return abs(TroughFreq-DriveFreq)
+end
+
+function plotDriveFreqDot(fVec,CurVec,DriveFreq)
+    DriveFreqCurrentIndex = findfirst(fVec.>=DriveFreq)
+    semilogy(fVec[DriveFreqCurrentIndex],abs.(CurVec[DriveFreqCurrentIndex]),"r*")
 end
