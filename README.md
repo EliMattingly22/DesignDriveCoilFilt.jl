@@ -58,9 +58,17 @@ The main function is: *DesignDriveFilter* and the required inputs are:
 
 ## Optimized Drive Filter
 
-By using *DesignDriveFilter_OptimDrift* (same inputs) the main function will be repeatedly called and the matching impedance is varied (changes the location of the "trough" *) in the transfer function (Vin->IDrive) such that there will be minimum drift given perturbation to the capactors in series with the drive coil. This optimization was picked, because in practice, these capacitors have the most current through them, and are most challenging to cool. By writing different "cost functions" the
+By using *DesignDriveFilter_OptimDrift* (same inputs, with some extra kwargs for optimization ) the main function will be repeatedly called and the matching impedance is varied (changes the location of the "trough" *) in the transfer function (Vin->IDrive) such that there will be minimum drift given perturbation to the capactors in series with the drive coil (or distance to local minima "trough"). This optimization was picked, because in practice, these capacitors have the most current through them, and are most challenging to cool.
 
-*The impedance matching only changes the location of drive relative to trough in the case that a notch is included. If no notch is included, then you can choose to use the PerturbTxReactance option. This hasn't been written into the code yet, though. 
+*The impedance matching only changes the location of drive relative to trough in the case that a notch is included. If no notch is included, then you can choose to use the PerturbTxReactance option. 
+ 
+ The extra kwargs are: 
+ BruteForceOpt = false,
+ MinimizeDistToTrough = true
+ 
+ BruteForceOpt is optimizing simply by running a large list of perturbations to the reactance and then picking the one with minimum cost (dist to trough or drift coeff). 
+ 
+ MinimizeDistToTrough is the boolean option to minimize the distance ofthe drive freqeuncy to the trough. If false, it will minimize the drift coeff. in the drive capacitor. 
  
 
 ## Optimized air-core toroid
