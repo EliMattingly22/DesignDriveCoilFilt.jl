@@ -17,6 +17,7 @@ This will install and precompile the package. These steps may take some time on 
  
 
 ## DesignDriveFilter
+[See the wiki for more details on function use](https://github.com/EliMattingly22/DesignDriveCoilFilt.jl/wiki/Use-of-tool)
 
 The main function is: *DesignDriveFilter* and the required inputs are:
 
