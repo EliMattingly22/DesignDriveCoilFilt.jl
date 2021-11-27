@@ -44,7 +44,6 @@ function DesignDriveFilter_OptimDrift(
             DetermineFreq=DetermineFreq,
             AddNotchFreq = AddNotchFreq,
             FilterZ = Zin)
-            plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
             
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
@@ -73,7 +72,6 @@ function DesignDriveFilter_OptimDrift(
             FilterZ = TargetZ,
             PerturbTxReactance = PerturbationX)
         
-            plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
@@ -481,11 +479,20 @@ function CircModel_SPICE(DriveFreq, VSrc,
     CurrentVec = VSrc.* plotACElCurrent(SPICE_DF,FreqList,Results,"LDrive")
     
     if PlotOn
-        pygui(true)
-        semilogy(FreqList,abs.(CurrentVec[:]))
         
+        AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
+        pygui(true)
+        plot(FreqList,(20*log10.(CurrentVec[:])))
         xlabel("Frequency, Hz")
-        ylabel("Current in LDrive")
+        ylabel("Current in LDrive [dBAmps per Volt input]")
+
+        StartIndex = findfirst(x-> x>(DriveFreq-1e3),FreqList)
+        StopIndex = findfirst(x-> x>(DriveFreq+1e3),FreqList)
+        AxInset = PyPlot.axes([0.68, 0.65, 0.25, 0.25]) #[left, bottom, width, height]
+        plot(FreqList[StartIndex:StopIndex],(20*log10.(CurrentVec[StartIndex:StopIndex])))
+        plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
+            
+        
     end
 
     getElementCurrents(SPICE_DF,Results,DriveFreq)
@@ -852,5 +859,5 @@ end
 
 function plotDriveFreqDot(fVec,CurVec,DriveFreq)
     DriveFreqCurrentIndex = findfirst(fVec.>=DriveFreq)
-    semilogy(fVec[DriveFreqCurrentIndex],abs.(CurVec[DriveFreqCurrentIndex]),"r*")
+    plot(fVec[DriveFreqCurrentIndex],20*log10.(CurVec[DriveFreqCurrentIndex]),"r*")
 end
