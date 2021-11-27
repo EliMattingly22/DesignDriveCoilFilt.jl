@@ -280,6 +280,8 @@ function DesignDriveFilter(
         "CFilt =  $(round(CFilt*1e6;sigdigits=3))μF matched with: CFiltMatch_L = $(round(CFiltMatch_L*1e6;sigdigits=3))μH ",
     )
 
+    
+
     if ~(AddNotchFreq===nothing)
     
         LNotch, CNotch, LNotch_Tune = makeNotchSection(AddNotchFreq[1], DriveFreq, TargetZ;LVal = 100e-6)
@@ -314,6 +316,9 @@ function DesignDriveFilter(
         LNotch_Tune = 1e-12
         LNotch_ESR = 1e-3
         LNotch_Tune_ESR = 1e-3
+        LNotch2 = 10 #Set default values is no notch is added
+        CNotch2 = 1e-12 
+        LNotch2_ESR = 1e-3
     end
 
     CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = CircModel_SPICE(DriveFreq, VSrc,
