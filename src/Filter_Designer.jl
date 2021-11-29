@@ -216,7 +216,7 @@ function DesignDriveFilter(
     Reactance_Load =
         ωDr * LDrive * NumDriveElements - NumDriveElements ./ (ωDr * CDrive)
     Reactance_Load = round(Reactance_Load; sigdigits = 3)
-    println("The reactance of the load is: $(round(Reactance_Load;sigdigits=3)) Ω")
+    # println("The reactance of the load is: $(round(Reactance_Load;sigdigits=3)) Ω")
     if ~DetermineFreq
         if (Reactance_Load > 0)
 
@@ -258,8 +258,8 @@ function DesignDriveFilter(
 
         DriveFreq = findFilterFreq(Q,real(ZDrive), LDrive * NumDriveElements, CDrive / NumDriveElements)
         ωDr = 2*π*DriveFreq
-        println("Determined Q to be $(round(Q))")
-        println("Determined drive freq. to be $(round(DriveFreq)) Hz")
+        # println("Determined Q to be $(round(Q))")
+        # println("Determined drive freq. to be $(round(DriveFreq)) Hz")
         ZSer = 1*im * ωDr*LDrive * NumDriveElements -  1*im /(ωDr* CDrive / NumDriveElements) +RDrive* NumDriveElements
         YSer = 1/ZSer
 
@@ -283,10 +283,10 @@ function DesignDriveFilter(
         LTee_1 = abs.(-1*imag(Z_TotMatchSect)/ωDr)
 
     end
-    println("L Tee 1 =  $(round(LTee_1*1e6;sigdigits=3))μH ")
-    println("L Tee 2 =  $(round(LTee_2*1e6;sigdigits=3))μH ")
-    println("CParAct =  $(round(CParAct*1e6;sigdigits=3))μF ")
-    println("SerCap =  $(round(SerCap*1e6;sigdigits=3))μF ")
+    # println("L Tee 1 =  $(round(LTee_1*1e6;sigdigits=3))μH ")
+    # println("L Tee 2 =  $(round(LTee_2*1e6;sigdigits=3))μH ")
+    # println("CParAct =  $(round(CParAct*1e6;sigdigits=3))μF ")
+    # println("SerCap =  $(round(SerCap*1e6;sigdigits=3))μF ")
 
 
     (LFilt, CFilt) = Butterworth_2(FilterZ, DriveFreq)
@@ -300,12 +300,12 @@ function DesignDriveFilter(
     LFilt2_Geom =
             ToroidOptimizer(WireDiam, CFiltMatch_L; CuFillFactor = WireFillFac)
     LFilt2_ESR = LFilt2_Geom.DCore.Resistance
-    println(
-        "LFilt =  $(round(LFilt*1e6;sigdigits=3))μH matched with: LFiltMatch_C =  $(round(LFiltMatch_C*1e6;sigdigits=3))μF ",
-    )
-    println(
-        "CFilt =  $(round(CFilt*1e6;sigdigits=3))μF matched with: CFiltMatch_L = $(round(CFiltMatch_L*1e6;sigdigits=3))μH ",
-    )
+    # println(
+    #     "LFilt =  $(round(LFilt*1e6;sigdigits=3))μH matched with: LFiltMatch_C =  $(round(LFiltMatch_C*1e6;sigdigits=3))μF ",
+    # )
+    # println(
+    #     "CFilt =  $(round(CFilt*1e6;sigdigits=3))μF matched with: CFiltMatch_L = $(round(CFiltMatch_L*1e6;sigdigits=3))μH ",
+    # )
 
     
 
