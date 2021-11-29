@@ -376,7 +376,7 @@ function DesignDriveFilter(
     LNotch_Tune_ESR;
     PlotOn = PlotFTs,
     RDampVal = RDampVal,
-    AxesArray = nothing)
+    AxesArray = AxesArray)
 
     return DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
 
@@ -416,7 +416,7 @@ function CircModel_SPICE(DriveFreq, VSrc,
     RDampVal = nothing,
     AxesArray=nothing)
 
-
+    
 
 
     if ArchetypeNetFileName === nothing
@@ -514,8 +514,9 @@ function CircModel_SPICE(DriveFreq, VSrc,
             
         
     end
-    AxesArray = AxesNewArray
-
+    if (AxesArray===nothing)
+        AxesArray = AxesNewArray   
+    end
     getElementCurrents(SPICE_DF,Results,DriveFreq)
     
     return CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
