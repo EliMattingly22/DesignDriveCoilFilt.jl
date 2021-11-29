@@ -496,7 +496,7 @@ function CircModel_SPICE(DriveFreq, VSrc,
             PyPlot.axes(AxesArray[1])
         end
         pygui(true)
-        plot(FreqList,(20*log10.(CurrentVec[:])))
+        plot(FreqList,(20*log10.(abs.(CurrentVec[:]))))
         xlabel("Frequency, Hz")
         ylabel("Current in LDrive [dBAmps per Volt input]")
 
@@ -509,7 +509,7 @@ function CircModel_SPICE(DriveFreq, VSrc,
             PyPlot.axes(AxesArray[2])
         end
         
-        plot(FreqList[StartIndex:StopIndex],(20*log10.(CurrentVec[StartIndex:StopIndex])))
+        plot(FreqList[StartIndex:StopIndex],(20*log10.(abs.(CurrentVec[StartIndex:StopIndex]))))
         plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
             
         
@@ -881,5 +881,5 @@ end
 
 function plotDriveFreqDot(fVec,CurVec,DriveFreq)
     DriveFreqCurrentIndex = findfirst(fVec.>=DriveFreq)
-    plot(fVec[DriveFreqCurrentIndex],20*log10.(CurVec[DriveFreqCurrentIndex]),"r*")
+    plot(fVec[DriveFreqCurrentIndex],20*log10.(abs.(CurVec[DriveFreqCurrentIndex])),"r*")
 end
