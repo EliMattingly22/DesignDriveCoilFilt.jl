@@ -33,8 +33,8 @@ struct GeneralParams <: Toroid
 end
 
 mutable struct Geom
-    Circ::DCore
-    DCore::Circle
+    DCore::DCore
+    Circ::Circle
     General::GeneralParams
 end
 
@@ -297,7 +297,7 @@ end
 function DCore_DetermineIdealInduct(ID,N,α)
     #Equation 7
      # AlphaMat Key. The columns represent [alpha e h p s t]
-
+     μ₀ = 4*pi*1e-7
      AlphaMat = [
         2 0.26  0.645 3.6   0.72  1.77
         3 0.85  1.5   8.0   2.74  4.42
@@ -314,7 +314,8 @@ function DCore_DetermineIdealInduct(ID,N,α)
     E = AlphaMat[α-1, 2] # As above
     B = ID/2 #For consistency with the paper
     #L = μ₀*N^2*B / (2*π)*((2*E+1)/4 + 2/3*S + S₁)
-    L = μ₀*N^2*B / (2*π) * T
+    println(T)
+    L = T * μ₀*N^2*B / (2*π)
     return L
 end
 

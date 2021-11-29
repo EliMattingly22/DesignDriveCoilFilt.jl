@@ -30,6 +30,11 @@ function DesignDriveFilter_OptimDrift(
     MinimizeDistToTrough = true
 )
 
+AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
+AxInset = PyPlot.axes([0.68, 0.65, 0.25, 0.25]) #[left, bottom, width, height]
+
+AxesArray = [AxMain,AxInset]
+
         if MinimizeDistToTrough
             println("minimizing distance to trough")
         else
@@ -43,7 +48,8 @@ function DesignDriveFilter_OptimDrift(
             WireDiam = WireDiam,
             DetermineFreq=DetermineFreq,
             AddNotchFreq = AddNotchFreq,
-            FilterZ = Zin)
+            FilterZ = Zin,
+            AxesArray=AxesArray)
             
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
@@ -70,7 +76,7 @@ function DesignDriveFilter_OptimDrift(
             DetermineFreq=DetermineFreq,
             AddNotchFreq = AddNotchFreq,
             FilterZ = TargetZ,
-            PerturbTxReactance = PerturbationX)
+            PerturbTxReactance = PerturbationX,AxesArray=AxesArray)
         
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
@@ -195,7 +201,8 @@ function DesignDriveFilter(
     AddNotchFreq = nothing,
     FilterZ = TargetZ,
     RDampVal = 100,
-    PerturbTxReactance = nothing
+    PerturbTxReactance = nothing,
+    AxesArray = nothing
 )
 
 
@@ -341,7 +348,7 @@ function DesignDriveFilter(
         LNotch2_ESR = 1e-3
     end
 
-    CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = CircModel_SPICE(DriveFreq, VSrc,
+    CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray = CircModel_SPICE(DriveFreq, VSrc,
     1e-3,
     RDrive,
     NumDriveElements,
@@ -368,9 +375,10 @@ function DesignDriveFilter(
     LNotch_Tune,
     LNotch_Tune_ESR;
     PlotOn = PlotFTs,
-    RDampVal = RDampVal)
+    RDampVal = RDampVal,
+    AxesArray = nothing)
 
-    return DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+    return DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
 
 end
 
@@ -405,7 +413,8 @@ function CircModel_SPICE(DriveFreq, VSrc,
     PlotOn = true,
     FreqList = 1000:10:100e3,
     ArchetypeNetFileName = nothing,
-    RDampVal = nothing)
+    RDampVal = nothing,
+    AxesArray=nothing)
 
 
 
@@ -479,8 +488,13 @@ function CircModel_SPICE(DriveFreq, VSrc,
     CurrentVec = VSrc.* plotACElCurrent(SPICE_DF,FreqList,Results,"LDrive")
     
     if PlotOn
-        
-        AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
+        if (AxesArray===nothing)
+            AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
+            
+            AxesNewArray = [AxMain, AxMain] #Initialize with length 2
+        else
+            PyPlot.axes(AxesArray[1])
+        end
         pygui(true)
         plot(FreqList,(20*log10.(CurrentVec[:])))
         xlabel("Frequency, Hz")
@@ -488,15 +502,23 @@ function CircModel_SPICE(DriveFreq, VSrc,
 
         StartIndex = findfirst(x-> x>(DriveFreq-1e3),FreqList)
         StopIndex = findfirst(x-> x>(DriveFreq+1e3),FreqList)
-        AxInset = PyPlot.axes([0.68, 0.65, 0.25, 0.25]) #[left, bottom, width, height]
+        if (AxesArray===nothing)
+            AxInset = PyPlot.axes([0.68, 0.65, 0.25, 0.25]) #[left, bottom, width, height]
+            AxesNewArray[2] = AxInset
+        else
+            PyPlot.axes(AxesArray[2])
+        end
+        
         plot(FreqList[StartIndex:StopIndex],(20*log10.(CurrentVec[StartIndex:StopIndex])))
         plotDriveFreqDot(FreqList,CurrentVec,DriveFreq)
             
         
     end
+    AxesArray = AxesNewArray
 
     getElementCurrents(SPICE_DF,Results,DriveFreq)
-    return CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+    
+    return CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
 end
 
 
