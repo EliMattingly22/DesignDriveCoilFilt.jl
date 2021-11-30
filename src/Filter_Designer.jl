@@ -27,7 +27,8 @@ function DesignDriveFilter_OptimDrift(
     RDampVal = FilterZ,
     PerturbTxReactance = nothing,
     BruteForceOpt = false,
-    MinimizeDistToTrough = true
+    MinimizeDistToTrough = true,
+    OptimIters = 10
 )
 
 AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
@@ -54,11 +55,13 @@ AxesArray = [AxMain,AxInset]
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CSer"),SPICE_DF.Name)]
             else
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CDrive"),SPICE_DF.Name)]
             end
             TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
-            println("$TroughDist is the dist to trough, $Drift is the drift")
+            println("$TroughDist is the distance from the drive frequency to the trough, $(round(Drift;sigdigits=3)) is the drift in magnitude, $(round(PhaseDrift;sigdigits=3)) is the drift in phase")
             if MinimizeDistToTrough
                 return TroughDist
             else
@@ -81,11 +84,13 @@ AxesArray = [AxMain,AxInset]
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CSer"),SPICE_DF.Name)]
             else
                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CDrive"),SPICE_DF.Name)]
             end
             TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
-            println("$TroughDist is the dist to trough, $Drift is the drift")
+            println("$TroughDist is the distance from the drive frequency to the trough, $(round(Drift;sigdigits=3)) is the drift in magnitude, $(round(PhaseDrift;sigdigits=3)) is the drift in phase")
             if MinimizeDistToTrough
                 return TroughDist
             else
@@ -96,7 +101,7 @@ AxesArray = [AxMain,AxInset]
     
 
     if  (PerturbTxReactance === nothing)
-        MinZ = optimize(WrapperFunkZin,5,25)
+        MinZ = optimize(WrapperFunkZin,5,25,iterations = OptimIters)
         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
         LDrive,RDrive, MinZ.minimizer,DriveFreq;
         CDrive = CDrive,
@@ -106,7 +111,7 @@ AxesArray = [AxMain,AxInset]
         FilterZ = MinZ.minimizer)
         MinZVal = MinZ.minimizer
         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-        return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+        return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
     else
         println("Perturbation given")
         if BruteForceOpt
@@ -121,7 +126,7 @@ AxesArray = [AxMain,AxInset]
             MinXVal = PerVec[MinIndex]
         else
             println("Using Optim to find min dist to trough")
-            MinXValOptimRes = optimize(WrapperFunk_Per,-2,2)
+            MinXValOptimRes = optimize(WrapperFunk_Per,-2,2,iterations = OptimIters)
             MinXVal = MinXValOptimRes.minimizer
         end
         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
@@ -134,7 +139,7 @@ AxesArray = [AxMain,AxInset]
         PerturbTxReactance = MinXVal)
         
         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-        return MinXVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList
+        return MinXVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
     end
 
 end
@@ -476,7 +481,7 @@ function CircModel_SPICE(DriveFreq, VSrc,
     ResultNodeNames = vcat("V(".*NodeList.*")", "I(".*(InputList[end-(NumVSources-1):end]).*")")
 
 
-    Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+    Results = [(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
     Results = hcat(Results...)
     ResDict = Dict(ResultNodeNames[1] => Results[1,:])
     for i in 2:length(ResultNodeNames)
