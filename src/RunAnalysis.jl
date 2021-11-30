@@ -389,7 +389,7 @@ function DetermineComponentsTempCoeffs(SPICE_DF,InputList,NumVSources,DriveFreq 
             NewCurrentDF = getElementCurrents(SPICE_DF,NewCurrResults,DriveFreq)
             PostHeatCurrent = NewCurrentDF.Current[CurrentElIndex]
         
-            SPICE_DF.DriftCoeff[i] = abs((PostHeatCurrent - BaselineCurrent) / BaselineCurrent)/δ
+            SPICE_DF.DriftCoeff[i] = (abs(PostHeatCurrent) - abs(BaselineCurrent)) / abs(BaselineCurrent)/δ
             SPICE_DF.DriftCoeffPhase[i] = (angle(PostHeatCurrent) - angle(BaselineCurrent))/δ
             SPICE_DF.Value[i]       =  SPICE_DF.Value[i]-dVal
 
@@ -408,7 +408,7 @@ function DetermineComponentsTempCoeffs(SPICE_DF,InputList,NumVSources,DriveFreq 
             NewCurrentDF = getElementCurrents(SPICE_DF,NewCurrResults,DriveFreq)
             PostHeatCurrent = NewCurrentDF.Current[CurrentElIndex]
             SPICE_DF.DriftCoeffPhase[i] = (angle(PostHeatCurrent) - angle(BaselineCurrent))/δ
-            SPICE_DF.DriftCoeff[i] = abs((PostHeatCurrent - BaselineCurrent) / BaselineCurrent)/δ
+            SPICE_DF.DriftCoeff[i] = (abs(PostHeatCurrent) - abs(BaselineCurrent)) / abs(BaselineCurrent)/δ
 
             SPICE_DF.ESR[i]       =  SPICE_DF.ESR[i]-dVal
 
@@ -430,7 +430,7 @@ function DetermineComponentsTempCoeffs(SPICE_DF,InputList,NumVSources,DriveFreq 
             NewCurrentDF = getElementCurrents(SPICE_DF,NewCurrResults,DriveFreq)
             PostHeatCurrent = NewCurrentDF.Current[CurrentElIndex]
         
-            SPICE_DF.DriftCoeff[i] = abs((PostHeatCurrent - BaselineCurrent) / BaselineCurrent)/δ
+            SPICE_DF.DriftCoeff[i] = (abs(PostHeatCurrent) - abs(BaselineCurrent)) / abs(BaselineCurrent)/δ
             SPICE_DF.DriftCoeffPhase[i] = (angle(PostHeatCurrent) - angle(BaselineCurrent))/δ
             SPICE_DF.Value[i]       =  SPICE_DF.Value[i]+dVal
 

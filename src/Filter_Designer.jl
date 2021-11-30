@@ -65,7 +65,7 @@ AxesArray = [AxMain,AxInset]
             if MinimizeDistToTrough
                 return TroughDist
             else
-                return Drift
+                return abs(Drift)
             end
         end
     
@@ -94,14 +94,14 @@ AxesArray = [AxMain,AxInset]
             if MinimizeDistToTrough
                 return TroughDist
             else
-                return Drift
+                return abs(Drift)
             end
         end
     
     
 
     if  (PerturbTxReactance === nothing)
-        MinZ = optimize(WrapperFunkZin,5,25,iterations = OptimIters)
+        MinZ = optimize((WrapperFunkZin),5,25,iterations = OptimIters)
         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
         LDrive,RDrive, MinZ.minimizer,DriveFreq;
         CDrive = CDrive,
@@ -115,7 +115,7 @@ AxesArray = [AxMain,AxInset]
     else
         println("Perturbation given")
         if BruteForceOpt
-            println("Scanning Reactance purturbations manually, finding min dist to trough")
+            
             PerVec = -2:.1:2
             DriftVec = zeros(length(PerVec),1)
             for i in 1:length(PerVec)
@@ -125,8 +125,8 @@ AxesArray = [AxMain,AxInset]
             MinIndex = findfirst(x-> x==minimum(DriftVec),DriftVec)
             MinXVal = PerVec[MinIndex]
         else
-            println("Using Optim to find min dist to trough")
-            MinXValOptimRes = optimize(WrapperFunk_Per,-2,2,iterations = OptimIters)
+           
+            MinXValOptimRes = optimize((WrapperFunk_Per),-2,2,iterations = OptimIters)
             MinXVal = MinXValOptimRes.minimizer
         end
         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
@@ -382,6 +382,7 @@ function DesignDriveFilter(
     PlotOn = PlotFTs,
     RDampVal = RDampVal,
     AxesArray = AxesArray)
+    DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
 
     return DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
 

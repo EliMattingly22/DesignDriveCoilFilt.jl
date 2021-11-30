@@ -14,7 +14,8 @@ include("ThermalModeling.jl")
 export DesignDriveFilter_OptimDrift,
        DesignDriveFilter,
        ToroidOptimizer,
-       PipeFlow
+       PipeFlow,
+       findResPair
        
 # Write your package code here.
 
