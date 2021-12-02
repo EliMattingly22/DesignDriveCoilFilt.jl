@@ -207,7 +207,8 @@ function DesignDriveFilter(
     FilterZ = TargetZ,
     RDampVal = 100,
     PerturbTxReactance = nothing,
-    AxesArray = nothing
+    AxesArray = nothing,
+    WriteFileName=nothing
 )
 
 
@@ -382,6 +383,35 @@ function DesignDriveFilter(
     PlotOn = PlotFTs,
     RDampVal = RDampVal,
     AxesArray = AxesArray)
+    
+    if ~(WriteFileName===nothing)
+    writeFilterSPICE(WriteFileName,
+    RDrive,
+    NumDriveElements,
+    LDrive,
+    CDrive,
+    SerCap,
+    LTee_2,
+    LTee_2_ESR,
+    LTee_1,
+    LTee_1_ESR,
+    CParAct,
+    LFilt,
+    LFilt2_ESR,
+    LFilt1_ESR,
+    LFiltMatch_C,
+    CFilt,
+    CFiltMatch_L,
+    LNotch,
+    LNotch_ESR,
+    CNotch,
+    LNotch2,
+    LNotch2_ESR,
+    CNotch2,
+    LNotch_Tune,
+    LNotch_Tune_ESR,
+    RDampVal)
+    end
     DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
 
     return DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
