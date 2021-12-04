@@ -2,6 +2,7 @@ module DesignDriveCoilFilt
 using FFTW,Gtk,PyPlot,Optim
 using LinearAlgebra
 using PyPlot
+using CSV
 
 # using Interpolations
 

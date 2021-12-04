@@ -203,7 +203,15 @@ id = signal_connect(RunScriptButton, "button-press-event") do widget, event
         WriteFileName=Savepath
         )
         println(SPICE_DF)
-        
+
+        if  (get_gtk_property(SaveButton, :active, Bool))
+            
+            
+            Savepath_CSV = Savepath[1:end-4]*".csv"
+            println(Savepath_CSV)
+            CSV.write(Savepath_CSV, SPICE_DF) 
+    
+    end
 end
 
 
