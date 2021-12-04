@@ -222,7 +222,7 @@ function DesignDriveFilter(
     Reactance_Load =
         ωDr * LDrive * NumDriveElements - NumDriveElements ./ (ωDr * CDrive)
     Reactance_Load = round(Reactance_Load; sigdigits = 3)
-    # println("The reactance of the load is: $(round(Reactance_Load;sigdigits=3)) Ω")
+    display(println("The reactance of the load is: $(round(Reactance_Load;sigdigits=3)) Ω"))
     if ~DetermineFreq
         if (Reactance_Load > 0)
 

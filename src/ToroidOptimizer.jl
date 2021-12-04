@@ -326,3 +326,4 @@ function CircCore_DetermineIdealInduct(IRad,N,α)
     a = (ORad-IRad)/2
     return 1e-6*(0.01257*N^2*(R-√*(R^2-a^2)))
 end
+

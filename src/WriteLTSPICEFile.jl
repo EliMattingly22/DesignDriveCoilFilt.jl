@@ -203,27 +203,33 @@ end
 
 
 function num2SciString(Val::Real,sigdigits=3)
-    Val = round(Val;sigdigits=sigdigits) /(10^sigdigits)
-    if Val>1e6
-        OutVal = Int(round(Val*10^sigdigits*1e-6))
-        return "$OutVal Meg"
-    elseif Val>1e3
-        OutVal = Int(round(Val*10^sigdigits*1e-3))
-        return "$(OutVal)k"
+    Val = round(Val;sigdigits=sigdigits)
+    
+    if Val>1e3
+        OutVal =  ((Val *1e-3))
+         ReturnStr =  "$(OutVal)k"
     elseif Val>1
-        OutVal = Int(round(Val*10^sigdigits))
-        return "$OutVal"
+        OutVal =  ((Val ))
+         ReturnStr =  "$OutVal"
     elseif Val>1e-3
-        OutVal = Int(round(Val*10^sigdigits*1e3))
-        return "$(OutVal)m"
+        OutVal =  ((Val *1e3))
+         ReturnStr =  "$(OutVal)m"
     elseif Val>1e-6
-        OutVal = Int(round(Val*10^sigdigits*1e6))
-        return "$(OutVal)u"
+        OutVal =  ((Val *1e6))
+         ReturnStr =  "$(OutVal)u"
     elseif Val>1e-9
-        OutVal = Int(round(Val*10^sigdigits*1e9))
-        return "$(OutVal)n"
+        OutVal =  ((Val *1e9))
+         ReturnStr =  "$(OutVal)n"
+    elseif Val>1e-12
+        OutVal =  ((Val *1e12))
+         ReturnStr =  "$(OutVal)p"
     else
-        OutVal = Int(round(Val*10^sigdigits*1e12))
-        return "$(OutVal)p"
+        OutVal =  ((Val *1e15))
+         ReturnStr =  "$(OutVal)f"
     end
+
+    if length(ReturnStr)>(sigdigits+2)
+        ReturnStr = ReturnStr[1:sigdigits+1]*ReturnStr[end]
+    end
+    return ReturnStr
 end

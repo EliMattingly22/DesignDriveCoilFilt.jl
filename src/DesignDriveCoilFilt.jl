@@ -12,6 +12,7 @@ include("ToroidOptimizer.jl")
 include("Filter_Designer.jl")
 include("ThermalModeling.jl")
 include("WriteLTSPICEFile.jl")
+include("Filter_Designer_GUI.jl")
 export DesignDriveFilter_OptimDrift,
        DesignDriveFilter,
        ToroidOptimizer,
