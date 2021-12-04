@@ -28,7 +28,8 @@ function DesignDriveFilter_OptimDrift(
     PerturbTxReactance = nothing,
     BruteForceOpt = false,
     MinimizeDistToTrough = true,
-    OptimIters = 10
+    OptimIters = 10,
+    WriteFileName=nothing
 )
 
 AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
@@ -108,7 +109,9 @@ AxesArray = [AxMain,AxInset]
         WireDiam = WireDiam,
         DetermineFreq=DetermineFreq,
         AddNotchFreq = AddNotchFreq,
-        FilterZ = MinZ.minimizer)
+        FilterZ = MinZ.minimizer,
+        WriteFileName=WriteFileName)
+        
         MinZVal = MinZ.minimizer
         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
         return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
@@ -136,7 +139,8 @@ AxesArray = [AxMain,AxInset]
         DetermineFreq=DetermineFreq,
         AddNotchFreq = AddNotchFreq,
         FilterZ = TargetZ,
-        PerturbTxReactance = MinXVal)
+        PerturbTxReactance = MinXVal,
+        WriteFileName=WriteFileName)
         
         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
         return MinXVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray

@@ -185,7 +185,26 @@ id = signal_connect(RunScriptButton, "button-press-event") do widget, event
     end
 
 
-
+    if  (get_gtk_property(OptimButton, :active, Bool))
+        
+        MinimizeDistToTrough = parse(Int,get_gtk_property(Optim_cb,:active,String))==0
+        
+        MinZ,DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray = DesignDriveFilter_OptimDrift(getVal(LDriveVal),getVal(RDriveVal),getVal(TargetZVal),getVal(DriveFreqVal); MinimizeDistToTrough=MinimizeDistToTrough,
+        CDrive = getVal(CDriveVal),
+        NumDriveElements = 1,
+        WireDiam = 2e-3,
+        WireFillFac = 0.75,
+        PlotSrcR = 0.0001,
+        PlotFTs = true,
+        VSrc = 2,
+        DetermineFreq = (get_gtk_property(FindFreqButton, :active, Bool)),
+        AddNotchFreq = NotchArray,
+        FilterZ = getVal(FilterZVal),
+        RDampVal = getVal(DampRVal),
+        PerturbTxReactance = nothing,
+        WriteFileName=Savepath
+        )
+    else
     DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray = DesignDriveFilter(getVal(LDriveVal),getVal(RDriveVal),getVal(TargetZVal),getVal(DriveFreqVal);
         CDrive = getVal(CDriveVal),
         NumDriveElements = 1,
@@ -202,6 +221,7 @@ id = signal_connect(RunScriptButton, "button-press-event") do widget, event
         AxesArray = nothing,
         WriteFileName=Savepath
         )
+    end
         println(SPICE_DF)
 
         if  (get_gtk_property(SaveButton, :active, Bool))
@@ -211,7 +231,7 @@ id = signal_connect(RunScriptButton, "button-press-event") do widget, event
             println(Savepath_CSV)
             CSV.write(Savepath_CSV, SPICE_DF) 
     
-    end
+        end
 end
 
 
