@@ -18,7 +18,8 @@ export DesignDriveFilter_OptimDrift,
        DesignDriveFilter,
        ToroidOptimizer,
        PipeFlow,
-       findResPair
+       findResPair,
+       useFilterDesignGUI
        
 # Write your package code here.
 
