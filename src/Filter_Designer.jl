@@ -286,11 +286,11 @@ function DesignDriveFilter(
         LTee_2 = LTee_2+PerturbInductance
         ZDrive = RDrive * NumDriveElements +
         im * ωDr * LDrive * NumDriveElements +
-        NumDriveElements ./ (im * 2 * pi * DriveFreq * CDrive)
+        NumDriveElements ./ (im * ωDr * CDrive)
         Z_SerMatchingSect = LTee_2_ESR+im * ωDr * LTee_2+ 1/(im*ωDr*SerCap)
         ZSerTot = Z_SerMatchingSect+ZDrive
         Z_TotMatchSect = Par([Z_Cap(CParAct,DriveFreq),ZSerTot])
-        LTee_1 = abs.(-1*imag(Z_TotMatchSect)/ωDr)
+        LTee_1 = (-1*imag(Z_TotMatchSect)/ωDr)
 
     end
     # println("L Tee 1 =  $(round(LTee_1*1e6;sigdigits=3))μH ")
