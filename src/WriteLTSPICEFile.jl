@@ -205,22 +205,22 @@ end
 function num2SciString(Val::Real,sigdigits=3)
     Val = round(Val;sigdigits=sigdigits)
     
-    if Val>1e3
+    if abs(Val)>1e3
         OutVal =  ((Val *1e-3))
          ReturnStr =  "$(OutVal)k"
-    elseif Val>1
+    elseif abs(Val)>1
         OutVal =  ((Val ))
          ReturnStr =  "$OutVal"
-    elseif Val>1e-3
+    elseif abs(Val)>1e-3
         OutVal =  ((Val *1e3))
          ReturnStr =  "$(OutVal)m"
-    elseif Val>1e-6
+    elseif abs(Val)>1e-6
         OutVal =  ((Val *1e6))
          ReturnStr =  "$(OutVal)u"
-    elseif Val>1e-9
+    elseif abs(Val)>1e-9
         OutVal =  ((Val *1e9))
          ReturnStr =  "$(OutVal)n"
-    elseif Val>1e-12
+    elseif abs(Val)>1e-12
         OutVal =  ((Val *1e12))
          ReturnStr =  "$(OutVal)p"
     else
