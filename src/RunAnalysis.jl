@@ -11,9 +11,9 @@ This function runs an AC analysis (freq. sweep) for an LTSPICE netlist file.
             All voltage inputs default to 1
 """
 function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothing)
-    if FileName===nothing
-            FileName = open_dialog("Pick a file")
-    end
+    # if FileName===nothing
+    #         FileName = open_dialog("Pick a file")
+    # end
 
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(FileName)
     # println(InputList)
@@ -62,9 +62,9 @@ function DetermineTempCo(FileName=nothing, DriveFreq = 25e3, ComponentName = "Ld
 
 
 
-    if FileName===nothing
-        FileName = open_dialog("Pick a file")
-    end
+    # if FileName===nothing
+    #     FileName = open_dialog("Pick a file")
+    # end
 
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(FileName)
     # println(InputList)

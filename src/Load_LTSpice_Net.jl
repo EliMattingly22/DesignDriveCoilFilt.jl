@@ -1,4 +1,4 @@
-using Gtk, DataFrames
+using DataFrames
 
 """
 This function takes in a file path/name and exports a dataframe consisting of the circuit parameters
@@ -7,9 +7,9 @@ Specifically the file should be from LTSPICE (or it wont work)
 If no input is given, the user will be prompted for a FileName
 """
 function LTSpiceLoad(FileName=nothing)
-        if FileName===nothing
-                FileName = open_dialog("Pick a file")
-        end
+        # if FileName===nothing
+        #         FileName = open_dialog("Pick a file")
+        # end
         f =open(FileName)
          Lines =  readlines(f)
 

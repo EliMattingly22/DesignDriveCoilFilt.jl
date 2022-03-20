@@ -1,5 +1,5 @@
 module DesignDriveCoilFilt
-using FFTW,Gtk,PyPlot,Optim
+using FFTW,PyPlot,Optim
 using LinearAlgebra
 using PyPlot
 using CSV
@@ -13,13 +13,11 @@ include("ToroidOptimizer.jl")
 include("Filter_Designer.jl")
 include("ThermalModeling.jl")
 include("WriteLTSPICEFile.jl")
-include("Filter_Designer_GUI.jl")
 export DesignDriveFilter_OptimDrift,
        DesignDriveFilter,
        ToroidOptimizer,
        PipeFlow,
-       findResPair,
-       useFilterDesignGUI
+       findResPair
        
 # Write your package code here.
 
