@@ -2,6 +2,10 @@
 This tool is to facilitate designing a drive coil filter for MPI. It is coded with [Julia](https://julialang.org/), an open-source language.
 
 It works by taking in the coil parameters (L, C, R) and then picking values for the matching network and filter. The tool then designs the ideal inductors (to include the ESR), simulates the full circuit, and outputs the values and transfer function.
+
+**Note: the GUI has been moved to a [separate repositiory](https://github.com/EliMattingly22/DesignDriveCoilFiltGUI.jl/) because Gtk can cause the REPL to be very slow on some devices.**
+
+
 ## Including the package:
  In the Julia REPL run:
  
