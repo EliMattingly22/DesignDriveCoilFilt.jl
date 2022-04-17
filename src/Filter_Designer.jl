@@ -50,7 +50,7 @@ AxesArray = [AxMain,AxInset]
             WireDiam = WireDiam,
             DetermineFreq=DetermineFreq,
             AddNotchFreq = AddNotchFreq,
-            FilterZ = Zin,
+            FilterZ = FilterZ,
             AxesArray=AxesArray)
             
             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
@@ -109,7 +109,7 @@ AxesArray = [AxMain,AxInset]
         WireDiam = WireDiam,
         DetermineFreq=DetermineFreq,
         AddNotchFreq = AddNotchFreq,
-        FilterZ = MinZ.minimizer,
+        FilterZ = FilterZ,
         WriteFileName=WriteFileName)
         
         MinZVal = MinZ.minimizer

@@ -193,7 +193,7 @@ function Length2Resist(L, Diam; ρ = 1.68e-8, FillFac = 1)
         Diam = Diam * 1e-3
     end
     A = pi / 4 .* Diam .^ 2
-    return L * ρ * FillFac / A
+    return L * ρ / FillFac / A
 end
 
 """
