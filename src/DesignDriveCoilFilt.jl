@@ -13,11 +13,14 @@ include("ToroidOptimizer.jl")
 include("Filter_Designer.jl")
 include("ThermalModeling.jl")
 include("WriteLTSPICEFile.jl")
-export DesignDriveFilter_OptimDrift,
-       DesignDriveFilter,
+include("ImpedanceTransformations.jl")
+export DesignDriveFilter,
        ToroidOptimizer,
        PipeFlow,
-       findResPair
+       findResPair,
+       findEquivLC,
+       Z_Cap,
+       Z_Ind
        
 # Write your package code here.
 

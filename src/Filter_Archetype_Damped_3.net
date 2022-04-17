@@ -1,0 +1,26 @@
+* C:\Users\Eli\.julia\dev\DesignDriveCoilFilt\src\Filter_Archetype_Damped_3.asc
+V1 N010 0 AC 1
+LFilt1 N005 N004 100u Rser=100m
+CFilt1 N001 N005 400n
+RSrc N004 N010 1m
+LFilt2 N006 N001 100u Rser=100m
+CFilt2 N002 N006 400n
+LFilt3 N001 0 100u Rser=100m
+CFilt3 N001 0 400n
+LNotch N002 N012 10
+CNotch N012 0 1p
+LNotch_Tune 0 N002 10
+CPar N003 0 1.5u
+CSer N008 N003 10
+CDrive N009 N008 66.7n
+LDrive N009 N011 596u
+RDrive N011 0 .75
+RDamp1 N002 N001 1Meg
+LDrivePair N007 N002 1p
+CDrivePair N003 N007 10
+RDamp2 N003 N002 1Meg
+LNotch1 N002 N013 10
+CNotch1 N013 0 1p
+.ac oct 1k 1k 500k
+.backanno
+.end

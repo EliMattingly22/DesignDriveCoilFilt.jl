@@ -6,148 +6,6 @@
 # include("ToroidOptimizer.jl")
 
 
-"""
-This function takes in similar inputs to DesignDriveFilter. It will iterate that function with varying matching impedances to minimize the expected drift in the current. 
-"""
-function DesignDriveFilter_OptimDrift(
-    LDrive,
-    RDrive,
-    TargetZ,
-    DriveFreq;
-    CDrive = 2,
-    NumDriveElements = 1,
-    WireDiam = 2e-3,
-    WireFillFac = 0.75,
-    PlotSrcR = TargetZ,
-    PlotFTs = true,
-    VSrc = 2,
-    DetermineFreq = false,
-    AddNotchFreq = nothing,
-    FilterZ = TargetZ,
-    RDampVal = FilterZ,
-    PerturbTxReactance = nothing,
-    BruteForceOpt = false,
-    MinimizeDistToTrough = true,
-    OptimIters = 10,
-    WriteFileName=nothing
-)
-
-AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
-AxInset = PyPlot.axes([0.68, 0.65, 0.25, 0.25]) #[left, bottom, width, height]
-
-AxesArray = [AxMain,AxInset]
-
-        if MinimizeDistToTrough
-            println("minimizing distance to trough")
-        else
-            println("Minimizing drift coeff")
-        end
-        function WrapperFunkZin(Zin)
-            DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
-            LDrive,RDrive, Zin,DriveFreq;
-            CDrive = CDrive,
-            NumDriveElements = NumDriveElements,
-            WireDiam = WireDiam,
-            DetermineFreq=DetermineFreq,
-            AddNotchFreq = AddNotchFreq,
-            FilterZ = FilterZ,
-            AxesArray=AxesArray)
-            
-            DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-            if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
-                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
-                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CSer"),SPICE_DF.Name)]
-            else
-                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-            end
-            TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
-            println("$TroughDist is the distance from the drive frequency to the trough, $(round(Drift;sigdigits=3)) is the drift in magnitude, $(round(PhaseDrift;sigdigits=3)) is the drift in phase")
-            if MinimizeDistToTrough
-                return TroughDist
-            else
-                return abs(Drift)
-            end
-        end
-    
-        
-        function WrapperFunk_Per(PerturbationX)
-            DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
-            LDrive,RDrive, TargetZ,DriveFreq;
-            CDrive = CDrive,
-            NumDriveElements = NumDriveElements,
-            WireDiam = WireDiam,
-            DetermineFreq=DetermineFreq,
-            AddNotchFreq = AddNotchFreq,
-            FilterZ = TargetZ,
-            PerturbTxReactance = PerturbationX,AxesArray=AxesArray)
-        
-            DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-            if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
-                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
-                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CSer"),SPICE_DF.Name)]
-            else
-                Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-                PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CDrive"),SPICE_DF.Name)]
-            end
-            TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
-            println("$TroughDist is the distance from the drive frequency to the trough, $(round(Drift;sigdigits=3)) is the drift in magnitude, $(round(PhaseDrift;sigdigits=3)) is the drift in phase")
-            if MinimizeDistToTrough
-                return TroughDist
-            else
-                return abs(Drift)
-            end
-        end
-    
-    
-
-    if  (PerturbTxReactance === nothing)
-        MinZ = optimize((WrapperFunkZin),5,25,iterations = OptimIters)
-        DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
-        LDrive,RDrive, MinZ.minimizer,DriveFreq;
-        CDrive = CDrive,
-        WireDiam = WireDiam,
-        DetermineFreq=DetermineFreq,
-        AddNotchFreq = AddNotchFreq,
-        FilterZ = FilterZ,
-        WriteFileName=WriteFileName)
-        
-        MinZVal = MinZ.minimizer
-        DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-        return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
-    else
-        println("Perturbation given")
-        if BruteForceOpt
-            
-            PerVec = -2:.1:2
-            DriftVec = zeros(length(PerVec),1)
-            for i in 1:length(PerVec)
-                println(i)
-                DriftVec[i] =WrapperFunk_Per(PerVec[i])
-            end
-            MinIndex = findfirst(x-> x==minimum(DriftVec),DriftVec)
-            MinXVal = PerVec[MinIndex]
-        else
-           
-            MinXValOptimRes = optimize((WrapperFunk_Per),-2,2,iterations = OptimIters)
-            MinXVal = MinXValOptimRes.minimizer
-        end
-        DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
-        LDrive,RDrive, TargetZ,DriveFreq;
-        CDrive = CDrive,
-        WireDiam = WireDiam,
-        DetermineFreq=DetermineFreq,
-        AddNotchFreq = AddNotchFreq,
-        FilterZ = TargetZ,
-        PerturbTxReactance = MinXVal,
-        WriteFileName=WriteFileName)
-        
-        DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
-        return MinXVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
-    end
-
-end
-
 
 
 """
@@ -293,51 +151,42 @@ function DesignDriveFilter(
         LTee_1 = (-1*imag(Z_TotMatchSect)/ωDr)
 
     end
-    # println("L Tee 1 =  $(round(LTee_1*1e6;sigdigits=3))μH ")
-    # println("L Tee 2 =  $(round(LTee_2*1e6;sigdigits=3))μH ")
-    # println("CParAct =  $(round(CParAct*1e6;sigdigits=3))μF ")
-    # println("SerCap =  $(round(SerCap*1e6;sigdigits=3))μF ")
 
 
     (LFilt, CFilt) = Butterworth_2(FilterZ, DriveFreq)
-    LFiltMatch_C = findResPair(LFilt, DriveFreq)
-    CFiltMatch_L = findResPair(CFilt, DriveFreq)
+    CFilt2 = findResPair(LFilt, DriveFreq)
+    LFilt2 = findResPair(CFilt, DriveFreq)
 
     LFilt1_Geom =
             ToroidOptimizer(WireDiam, LFilt; CuFillFactor = WireFillFac)
     LFilt1_ESR = LFilt1_Geom.DCore.Resistance
 
     LFilt2_Geom =
-            ToroidOptimizer(WireDiam, CFiltMatch_L; CuFillFactor = WireFillFac)
+            ToroidOptimizer(WireDiam, LFilt2; CuFillFactor = WireFillFac)
     LFilt2_ESR = LFilt2_Geom.DCore.Resistance
-    # println(
-    #     "LFilt =  $(round(LFilt*1e6;sigdigits=3))μH matched with: LFiltMatch_C =  $(round(LFiltMatch_C*1e6;sigdigits=3))μF ",
-    # )
-    # println(
-    #     "CFilt =  $(round(CFilt*1e6;sigdigits=3))μF matched with: CFiltMatch_L = $(round(CFiltMatch_L*1e6;sigdigits=3))μH ",
-    # )
+  
 
-    
-
+    CalcC(r,xl) = 1/(ωDr*(r^2/xl+xl))
+    C_Par_2 = abs(CalcC(TargetZ, im * ωDr * LDrive * NumDriveElements + NumDriveElements ./ (im * ωDr * CDrive)+1/(im*ωDr*SerCap)))
+    X_Par_2 =  1 ./ (im * ωDr * C_Par_2)
+    println(C_Par_2)
     if ~(AddNotchFreq===nothing)
-    
-        LNotch, CNotch, LNotch_Tune = makeNotchSection(AddNotchFreq[1], DriveFreq, TargetZ;LVal = 100e-6)
+        if length(AddNotchFreq)==1
+            LNotch, CNotch = makeNotchSection(AddNotchFreq[1], DriveFreq, X_Par_2)
+        else
+            LNotch, CNotch = makeNotchSection(AddNotchFreq[1], DriveFreq, X_Par_2*2)
+        end  
         LNotch_Geom =
                 ToroidOptimizer(WireDiam, LNotch; CuFillFactor = WireFillFac)
         LNotch_ESR = LNotch_Geom.DCore.Resistance
-        LNotch_Tune_Geom =
-                ToroidOptimizer(WireDiam, LNotch_Tune; CuFillFactor = WireFillFac)
-        LNotch_Tune_ESR = LNotch_Tune_Geom.DCore.Resistance
+       
         println("Adding notch")
         if length(AddNotchFreq)==2
-            LNotch2, CNotch2, LNotch_Tune2 = makeNotchSection(AddNotchFreq[2], DriveFreq, TargetZ;LVal = 100e-6)
+            LNotch2, CNotch2 = makeNotchSection(AddNotchFreq[2], DriveFreq, X_Par_2*2)
             LNotch2_Geom =
                     ToroidOptimizer(WireDiam, LNotch2; CuFillFactor = WireFillFac)
             LNotch2_ESR = LNotch2_Geom.DCore.Resistance
-            LNotch_Tune = LNotch_Tune+LNotch_Tune2
-            LNotch_Tune_Geom =
-                    ToroidOptimizer(WireDiam, LNotch_Tune; CuFillFactor = WireFillFac)
-            LNotch_Tune_ESR = LNotch_Tune_Geom.DCore.Resistance
+           
             println("Adding second notch")
         else
             LNotch2 = 10
@@ -348,11 +197,9 @@ function DesignDriveFilter(
         end
             
     else
-        LNotch = 10
-        CNotch = 1e-12
-        LNotch_Tune = 1e-12
-        LNotch_ESR = 1e-3
-        LNotch_Tune_ESR = 1e-3
+        LNotch = 1e-9
+        CNotch = C_Par_2
+       
         LNotch2 = 10 #Set default values is no notch is added
         CNotch2 = 1e-12 
         LNotch2_ESR = 1e-3
@@ -365,25 +212,19 @@ function DesignDriveFilter(
     LDrive,
     CDrive,
     SerCap,
-    LTee_2,
-    LTee_2_ESR,
-    LTee_1,
-    LTee_1_ESR,
     CParAct,
     LFilt,
     LFilt2_ESR,
     LFilt1_ESR,
-    LFiltMatch_C,
+    CFilt2,
     CFilt,
-    CFiltMatch_L,
+    LFilt2,
     LNotch,
     LNotch_ESR,
     CNotch,
     LNotch2,
     LNotch2_ESR,
-    CNotch2,
-    LNotch_Tune,
-    LNotch_Tune_ESR;
+    CNotch2;
     PlotOn = PlotFTs,
     RDampVal = RDampVal,
     AxesArray = AxesArray)
@@ -395,26 +236,22 @@ function DesignDriveFilter(
     LDrive,
     CDrive,
     SerCap,
-    LTee_2,
-    LTee_2_ESR,
-    LTee_1,
-    LTee_1_ESR,
     CParAct,
     LFilt,
     LFilt2_ESR,
     LFilt1_ESR,
-    LFiltMatch_C,
+    LFilt2,
+    CFilt2,
     CFilt,
-    CFiltMatch_L,
     LNotch,
     LNotch_ESR,
     CNotch,
     LNotch2,
     LNotch2_ESR,
     CNotch2,
-    LNotch_Tune,
-    LNotch_Tune_ESR,
-    RDampVal)
+    RDampVal,
+    NumDriveElements*LDrive,
+    Par(CDrive/NumDriveElements,SerCap))
     end
     DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
 
@@ -431,25 +268,19 @@ function CircModel_SPICE(DriveFreq, VSrc,
     LDrive,
     CDrive,
     SerCap,
-    LTee_2,
-    LTee_2_ESR,
-    LTee_1,
-    LTee_1_ESR,
     CParAct,
     LFilt,
     LFilt2_ESR,
     LFilt1_ESR,
-    LFiltMatch_C,
+    CFilt2,
     CFilt,
-    CFiltMatch_L,
+    LFilt2,
     LNotch,
     LNotch_ESR,
     CNotch,
     LNotch2,
     LNotch2_ESR,
-    CNotch2,
-    LNotch_Tune,
-    LNotch_Tune_ESR;
+    CNotch2;
     PlotOn = true,
     FreqList = 1000:10:100e3,
     ArchetypeNetFileName = nothing,
@@ -461,30 +292,28 @@ function CircModel_SPICE(DriveFreq, VSrc,
 
     if ArchetypeNetFileName === nothing
 
-        ArchetypeNetFileName = joinpath(dirname(pathof(DesignDriveCoilFilt)),"Filter_Archetype_Damped_2.net")
+        ArchetypeNetFileName = joinpath(dirname(pathof(DesignDriveCoilFilt)),"Filter_Archetype_Damped_3.net")
 
     end
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(ArchetypeNetFileName)
     UpdateElementVal!(SPICE_DF,"RSrc",PlotSrcR)
 
-    UpdateElementVal!(SPICE_DF,"LNotch_Tune",LNotch_Tune)
     UpdateElementVal!(SPICE_DF,"LNotch",LNotch)
-    UpdateElementESR!(SPICE_DF,"LNotch_Tune",LNotch_Tune_ESR)
     UpdateElementESR!(SPICE_DF,"LNotch",LNotch_ESR)
     UpdateElementVal!(SPICE_DF,"CNotch",CNotch)
-    UpdateElementVal!(SPICE_DF,"LNotch2",LNotch2)
-    UpdateElementESR!(SPICE_DF,"LNotch2",LNotch2_ESR)
-    UpdateElementVal!(SPICE_DF,"CNotch2",CNotch2)
+    UpdateElementVal!(SPICE_DF,"LNotch1",LNotch2)
+    UpdateElementESR!(SPICE_DF,"LNotch1",LNotch2_ESR)
+    UpdateElementVal!(SPICE_DF,"CNotch1",CNotch2)
 
     UpdateElementVal!(SPICE_DF,"LFilt1",LFilt)
     UpdateElementVal!(SPICE_DF,"LFilt2",LFilt)
-    UpdateElementVal!(SPICE_DF,"CLFilt_C1",LFiltMatch_C)
-    UpdateElementVal!(SPICE_DF,"CLFilt_C2",LFiltMatch_C)
+    UpdateElementVal!(SPICE_DF,"CFilt1",CFilt2)
+    UpdateElementVal!(SPICE_DF,"CFilt2",CFilt2)
     UpdateElementESR!(SPICE_DF,"LFilt1",LFilt1_ESR)
 
-    UpdateElementVal!(SPICE_DF,"CFilt",CFilt)
-    UpdateElementVal!(SPICE_DF,"LCFilt_L",CFiltMatch_L)
-    UpdateElementESR!(SPICE_DF,"LCFilt_L",LFilt2_ESR)
+    UpdateElementVal!(SPICE_DF,"CFilt3",CFilt)
+    UpdateElementVal!(SPICE_DF,"LFilt3",LFilt2)
+    UpdateElementESR!(SPICE_DF,"LFilt3",LFilt2_ESR)
 
     UpdateElementVal!(SPICE_DF,"RDrive",RDrive)
     UpdateElementVal!(SPICE_DF,"LDrive",NumDriveElements*LDrive)
@@ -493,17 +322,13 @@ function CircModel_SPICE(DriveFreq, VSrc,
     UpdateElementVal!(SPICE_DF,"CSer",SerCap)
     UpdateElementVal!(SPICE_DF,"CPar",CParAct)
 
-    UpdateElementVal!(SPICE_DF,"LTee1",LTee_1)
-    UpdateElementESR!(SPICE_DF,"LTee1",LTee_1_ESR)
-    UpdateElementVal!(SPICE_DF,"LTee2",LTee_2)
-    UpdateElementESR!(SPICE_DF,"LTee2",LTee_2_ESR)
-
+    UpdateElementVal!(SPICE_DF,"LDrivePair",NumDriveElements*LDrive)
+    UpdateElementESR!(SPICE_DF,"LDrivePair",LFilt1_ESR)
+    UpdateElementVal!(SPICE_DF,"CDrivePair",Par(CDrive/NumDriveElements,SerCap))
 
     if ~(RDampVal===nothing)
 
-        UpdateElementVal!(SPICE_DF,"LDamp",LFilt)
-        UpdateElementESR!(SPICE_DF,"LDamp",LFilt1_ESR)
-        UpdateElementVal!(SPICE_DF,"CDamp",LFiltMatch_C)
+
         UpdateElementVal!(SPICE_DF,"RDamp2",RDampVal)
         UpdateElementVal!(SPICE_DF,"RDamp1",RDampVal)
 
@@ -630,11 +455,9 @@ The outputs are:
     CVal(Farads)
     LTune(Henries)
 """
-function makeNotchSection(NotchFreq, DriveFreq, RMatch;LVal = 100e-6)
-    CVal = findResPair(LVal, NotchFreq)
-    Resid_Reactance = -1*(imag(Par(Z_Cap(CVal,DriveFreq)+Z_Ind(LVal,DriveFreq),RMatch)))
-    LTune = Resid_Reactance/(2*π*DriveFreq)
-    return LVal,CVal,LTune
+function makeNotchSection(NotchFreq, DriveFreq, XEquiv)
+    LVal,CVal = findEquivLC(XEquiv,DriveFreq,NotchFreq)
+    return abs(LVal),abs(CVal)
 end
 
 """
@@ -924,3 +747,148 @@ function plotDriveFreqDot(fVec,CurVec,DriveFreq)
     DriveFreqCurrentIndex = findfirst(fVec.>=DriveFreq)
     plot(fVec[DriveFreqCurrentIndex],20*log10.(abs.(CurVec[DriveFreqCurrentIndex])),"r*")
 end
+
+
+
+
+# """
+# This function takes in similar inputs to DesignDriveFilter. It will iterate that function with varying matching impedances to minimize the expected drift in the current. 
+# """
+# function DesignDriveFilter_OptimDrift(
+#     LDrive,
+#     RDrive,
+#     TargetZ,
+#     DriveFreq;
+#     CDrive = 2,
+#     NumDriveElements = 1,
+#     WireDiam = 2e-3,
+#     WireFillFac = 0.75,
+#     PlotSrcR = TargetZ,
+#     PlotFTs = true,
+#     VSrc = 2,
+#     DetermineFreq = false,
+#     AddNotchFreq = nothing,
+#     FilterZ = TargetZ,
+#     RDampVal = FilterZ,
+#     PerturbTxReactance = nothing,
+#     BruteForceOpt = false,
+#     MinimizeDistToTrough = true,
+#     OptimIters = 10,
+#     WriteFileName=nothing
+# )
+
+# AxMain = PyPlot.axes([0.13, 0.15, 0.85, 0.85])
+# AxInset = PyPlot.axes([0.68, 0.65, 0.25, 0.25]) #[left, bottom, width, height]
+
+# AxesArray = [AxMain,AxInset]
+
+#         if MinimizeDistToTrough
+#             println("minimizing distance to trough")
+#         else
+#             println("Minimizing drift coeff")
+#         end
+#         function WrapperFunkZin(Zin)
+#             DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+#             LDrive,RDrive, Zin,DriveFreq;
+#             CDrive = CDrive,
+#             NumDriveElements = NumDriveElements,
+#             WireDiam = WireDiam,
+#             DetermineFreq=DetermineFreq,
+#             AddNotchFreq = AddNotchFreq,
+#             FilterZ = FilterZ,
+#             AxesArray=AxesArray)
+            
+#             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+#             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
+#                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+#                 PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CSer"),SPICE_DF.Name)]
+#             else
+#                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+#                 PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+#             end
+#             TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
+#             println("$TroughDist is the distance from the drive frequency to the trough, $(round(Drift;sigdigits=3)) is the drift in magnitude, $(round(PhaseDrift;sigdigits=3)) is the drift in phase")
+#             if MinimizeDistToTrough
+#                 return TroughDist
+#             else
+#                 return abs(Drift)
+#             end
+#         end
+    
+        
+#         function WrapperFunk_Per(PerturbationX)
+#             DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+#             LDrive,RDrive, TargetZ,DriveFreq;
+#             CDrive = CDrive,
+#             NumDriveElements = NumDriveElements,
+#             WireDiam = WireDiam,
+#             DetermineFreq=DetermineFreq,
+#             AddNotchFreq = AddNotchFreq,
+#             FilterZ = TargetZ,
+#             PerturbTxReactance = PerturbationX,AxesArray=AxesArray)
+        
+#             DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+#             if CDrive>1 #Check the drift in the drive capacitor if it is used, otherwise use the CSer 
+#                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CSer"),SPICE_DF.Name)]
+#                 PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CSer"),SPICE_DF.Name)]
+#             else
+#                 Drift = SPICE_DF.DriftCoeff[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+#                 PhaseDrift = SPICE_DF.DriftCoeffPhase[findfirst(isequal("CDrive"),SPICE_DF.Name)]
+#             end
+#             TroughDist = findDriveDistFromTrough(FreqList,CurrentVec,DriveFreq)
+#             println("$TroughDist is the distance from the drive frequency to the trough, $(round(Drift;sigdigits=3)) is the drift in magnitude, $(round(PhaseDrift;sigdigits=3)) is the drift in phase")
+#             if MinimizeDistToTrough
+#                 return TroughDist
+#             else
+#                 return abs(Drift)
+#             end
+#         end
+    
+    
+
+#     if  (PerturbTxReactance === nothing)
+#         MinZ = optimize((WrapperFunkZin),5,25,iterations = OptimIters)
+#         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+#         LDrive,RDrive, MinZ.minimizer,DriveFreq;
+#         CDrive = CDrive,
+#         WireDiam = WireDiam,
+#         DetermineFreq=DetermineFreq,
+#         AddNotchFreq = AddNotchFreq,
+#         FilterZ = FilterZ,
+#         WriteFileName=WriteFileName)
+        
+#         MinZVal = MinZ.minimizer
+#         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+#         return MinZVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
+#     else
+#         println("Perturbation given")
+#         if BruteForceOpt
+            
+#             PerVec = -2:.1:2
+#             DriftVec = zeros(length(PerVec),1)
+#             for i in 1:length(PerVec)
+#                 println(i)
+#                 DriftVec[i] =WrapperFunk_Per(PerVec[i])
+#             end
+#             MinIndex = findfirst(x-> x==minimum(DriftVec),DriftVec)
+#             MinXVal = PerVec[MinIndex]
+#         else
+           
+#             MinXValOptimRes = optimize((WrapperFunk_Per),-2,2,iterations = OptimIters)
+#             MinXVal = MinXValOptimRes.minimizer
+#         end
+#         DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList = DesignDriveFilter(
+#         LDrive,RDrive, TargetZ,DriveFreq;
+#         CDrive = CDrive,
+#         WireDiam = WireDiam,
+#         DetermineFreq=DetermineFreq,
+#         AddNotchFreq = AddNotchFreq,
+#         FilterZ = TargetZ,
+#         PerturbTxReactance = MinXVal,
+#         WriteFileName=WriteFileName)
+        
+#         DetermineComponentsTempCoeffs(SPICE_DF,InputList,1,DriveFreq,"LDrive")
+#         return MinXVal, DriveFreq, CurrentVec, Results, SPICE_DF,inputs,InputList,FreqList,AxesArray
+#     end
+
+# end
