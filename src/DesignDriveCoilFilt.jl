@@ -14,6 +14,7 @@ include("Filter_Designer.jl")
 include("ThermalModeling.jl")
 include("WriteLTSPICEFile.jl")
 include("ImpedanceTransformations.jl")
+include("SaveToroidSVG.jl")
 export DesignDriveFilter,
        ToroidOptimizer,
        PipeFlow,

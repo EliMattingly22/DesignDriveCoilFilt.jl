@@ -37,7 +37,20 @@ mutable struct Geom
     Circ::Circle
     General::GeneralParams
 end
+"""
+This function makes an optimal D-Core toroid given the following inputs:
+    Dia - wire diamter in meters
+    LTarget-  target inductance in Henries
 
+    kwarg:
+    NumLayers - Number of windings layers
+    CoreMu - permeability scaling factor
+    Alpha - ratio of OD/ID use an integer between 2-5
+    CuFillFactor - scales resistance value. If using litz it will be <1
+    ExportFileName - if you want to export the SVG of the core cross section you can use this. If you enter a file name E.g. "Test.svg", it will save it in the present working directory
+    NPts - number of points in the exported svg
+
+"""
 function ToroidOptimizer(
     Dia,
     LTarget;
@@ -45,6 +58,8 @@ function ToroidOptimizer(
     CoreMu = 1,
     Alpha = 2,
     CuFillFactor = 1,
+    ExportFileName = nothing,
+    NPts = 100
 )
     ## Summary: To use this function enter the wire diameter and the target
     #inductance (in meters and Henries). The calculations assume "NumLayers" fully
@@ -180,6 +195,10 @@ function ToroidOptimizer(
     # WireLength     :$(round(DCoreGeom.WireLength;sigdigits=2)) meters
     # WireResist     :$(round(DCoreGeom.Resistance;sigdigits=2)) Ω")
     CoilGeom = Geom(DCoreGeom, CircleGeom, General)
+
+    if ~(ExportFileName===nothing)
+        DCoreParams2SVG(DCoreGeom.ID*1000 , DCoreGeom.OD*1000,"DCoreGeom"*ExportFileName;NPts = NPts)
+    end
     return CoilGeom
 end
 
