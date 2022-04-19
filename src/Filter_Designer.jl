@@ -139,18 +139,6 @@ function DesignDriveFilter(
         SerCap = 1e6
     end
 
-    if ~(PerturbTxReactance === nothing)
-        PerturbInductance = PerturbTxReactance/ωDr
-        LTee_2 = LTee_2+PerturbInductance
-        ZDrive = RDrive * NumDriveElements +
-        im * ωDr * LDrive * NumDriveElements +
-        NumDriveElements ./ (im * ωDr * CDrive)
-        Z_SerMatchingSect = LTee_2_ESR+im * ωDr * LTee_2+ 1/(im*ωDr*SerCap)
-        ZSerTot = Z_SerMatchingSect+ZDrive
-        Z_TotMatchSect = Par([Z_Cap(CParAct,DriveFreq),ZSerTot])
-        LTee_1 = (-1*imag(Z_TotMatchSect)/ωDr)
-
-    end
 
 
     (LFilt, CFilt) = Butterworth_2(FilterZ, DriveFreq)
@@ -167,7 +155,7 @@ function DesignDriveFilter(
   
 
     CalcC(r,xl) = 1/(ωDr*(r^2/xl+xl))
-    C_Par_2 = abs(CalcC(TargetZ, im * ωDr * LDrive * NumDriveElements + NumDriveElements ./ (im * ωDr * CDrive)+1/(im*ωDr*SerCap)))
+    C_Par_2 = abs(CalcC(TargetZ, abs.(im * ωDr * LDrive * NumDriveElements + NumDriveElements ./ (im * ωDr * CDrive)+1/(im*ωDr*SerCap))))
     X_Par_2 =  1 ./ (im * ωDr * C_Par_2)
     println(C_Par_2)
     if ~(AddNotchFreq===nothing)
@@ -456,6 +444,7 @@ The outputs are:
     LTune(Henries)
 """
 function makeNotchSection(NotchFreq, DriveFreq, XEquiv)
+    println(XEquiv)
     LVal,CVal = findEquivLC(XEquiv,DriveFreq,NotchFreq)
     return abs(LVal),abs(CVal)
 end
