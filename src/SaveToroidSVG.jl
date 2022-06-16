@@ -76,4 +76,38 @@ function DCoreParams2SVG(ID,OD,FileName;NPts = 100)
     end
 end
 
+function WriteToroidParamsTextFile(DCoreGeom, CircleGeom, General,FileName;SigDigits = 4)
+   
+    open(FileName,"w") do file
+        write(file,
+"""
+
+Target inductance is: $(round(General.TargetInductance*1e6;sigdigits=SigDigits)) μH
+Single-layer inductance is: $(round(General.SingleLayerInductance*1e6;sigdigits=SigDigits)) μH
+Wire diameter is: $(round(General.WireDiameter*1e3;sigdigits=SigDigits)) mm
+
+FlatHeight     :$(round(DCoreGeom.FlatHeight*1000;sigdigits=SigDigits)) mm
+MaxHeight      :$(round(DCoreGeom.MaxHeight*1000;sigdigits=SigDigits)) mm
+RadiusAtPeak   :$(round(DCoreGeom.RadiusAtPeak*1000;sigdigits=SigDigits)) mm
+ID             :$(round(DCoreGeom.ID*1000;sigdigits=SigDigits)) mm
+OD             :$(round(DCoreGeom.OD*1000;sigdigits=SigDigits)) mm
+Turns          :$(DCoreGeom.Turns) Turns
+Layers         :$(DCoreGeom.Layers) 
+WireLength     :$(round(DCoreGeom.WireLength;sigdigits=SigDigits)) meters
+WireResist     :$(round(DCoreGeom.Resistance;sigdigits=SigDigits)) Ω
+
+
+Core Radius     :$(round(CircleGeom.CoreRadius*1000;sigdigits=SigDigits)) mm
+CenterRadius      :$(round(CircleGeom.CenterRadius*1000;sigdigits=SigDigits)) mm
+ID             :$(round(CircleGeom.ID*1000;sigdigits=SigDigits)) mm
+OD             :$(round(CircleGeom.OD*1000;sigdigits=SigDigits)) mm
+Turns          :$(CircleGeom.Turns) Turns
+Layers         :$(CircleGeom.Layers) 
+WireLength     :$(round(CircleGeom.WireLength;sigdigits=SigDigits)) meters
+WireResist     :$(round(CircleGeom.Resistance;sigdigits=SigDigits)) Ω
+
+""")
+    end
+end
+
 

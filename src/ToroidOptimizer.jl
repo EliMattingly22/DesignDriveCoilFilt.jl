@@ -47,7 +47,7 @@ This function makes an optimal D-Core toroid given the following inputs:
     CoreMu - permeability scaling factor
     Alpha - ratio of OD/ID use an integer between 2-5
     CuFillFactor - scales resistance value. If using litz it will be <1
-    ExportFileName - if you want to export the SVG of the core cross section you can use this. If you enter a file name E.g. "Test.svg", it will save it in the present working directory
+    ExportFileName - if you want to export the SVG and text file of the core cross section you can use this. If you enter a file name E.g. "Test", it will save two files in the present working directory as: "ToroidParameters-Test.txt"and "DCoreGeom-Test.SVG"
     NPts - number of points in the exported svg
 
 """
@@ -133,7 +133,7 @@ function ToroidOptimizer(
         D_WireR,
     )
 
-    ## Two-layer circular core
+    ## circular core
 
 
     KFunk(k) = abs.(0.2722 * k .^ (3 / 2) + 0.25 * k - LperL0) #From "The Optimal Form for Coreless Inductor", P. Murgatroyd IEEE TMI, 25 No. 3 1989
@@ -197,7 +197,8 @@ function ToroidOptimizer(
     CoilGeom = Geom(DCoreGeom, CircleGeom, General)
 
     if ~(ExportFileName===nothing)
-        DCoreParams2SVG(DCoreGeom.ID*1000 , DCoreGeom.OD*1000,"DCoreGeom"*ExportFileName;NPts = NPts)
+        DCoreParams2SVG(DCoreGeom.ID*1000 , DCoreGeom.OD*1000,"DCoreGeom-"*ExportFileName*".SVG";NPts = NPts)
+        WriteToroidParamsTextFile(DCoreGeom, CircleGeom, General,"ToroidParameters-"*ExportFileName*".txt")
     end
     return CoilGeom
 end
