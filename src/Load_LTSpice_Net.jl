@@ -14,8 +14,8 @@ function LTSpiceLoad(FileName=nothing)
          Lines =  readlines(f)
 
          close(f)
-
-         SPICE_DF = DataFrame((Type = Any[], Value=Any[], Node1=Any[], Node2=Any[], Name=Any[],ESR = Any[]))
+        KCount = 0
+         SPICE_DF = DataFrame((Type = Any[], Value=Any[], Node1=Any[], Node2=Any[], Name=Any[],ESR = Any[],KCount = Any[],Attr1 = Any[],Attr2 = Any[],Attr3 = Any[],Node3 = Any[],Node4 = Any[]))
         for i in 1:length(Lines)
 
                 Spaces = vcat(findall(" ",Lines[i])...)
@@ -44,14 +44,73 @@ function LTSpiceLoad(FileName=nothing)
                         else
                                 RSerVal=0
                         end
-                        push!(SPICE_DF,[Lines[i][1] MakeNumericalVals(Value) Node1 Node2 Name RSerVal])
+
+                        RParInds = findall("Rpar=", Lines[i])
+                        if length(RParInds)>0
+                                RParIndEnd =RParInds[1][end]+1
+                                if RParInds[1][end]>maximum(Spaces)
+                                        RParVal = MakeNumericalVals(Lines[i][RParIndEnd:end])
+                                else
+                                        Tmp = findfirst(x-> x>RParIndEnd,Spaces)
+                                        RParVal = MakeNumericalVals(Lines[i][RParIndEnd:Spaces[Tmp]])
+                                end
+                        push!(SPICE_DF,['R' RParVal Node1 Node2 "RP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
+                        end
+
+                        push!(SPICE_DF,[Lines[i][1] MakeNumericalVals(Value) Node1 Node2 Name RSerVal NaN NaN NaN NaN NaN NaN])
 
                 elseif (Lines[i][1]=='V')
                         Node1 = Lines[i][Spaces[1]+1:Spaces[2]-1]
                         Node2 = Lines[i][Spaces[2]+1:Spaces[3]-1]
                         Name = Lines[i][1:Spaces[1]-1]
-                        push!(SPICE_DF,[Lines[i][1] 1 Node1 Node2 Name 0])
+                        push!(SPICE_DF,[Lines[i][1] 1 Node1 Node2 Name 0 NaN NaN NaN NaN NaN NaN])
+                elseif (Lines[i][1]=='K')
+                        KCount+=1
+                        L1Name = Lines[i][Spaces[1]+1:Spaces[2]-1]
+                        L1Row = findfirst(L1Name.==SPICE_DF[:,5])
 
+                        
+                        
+                        L2Name = Lines[i][Spaces[2]+1:Spaces[3]-1]
+                        L2Row = findfirst(L2Name.==SPICE_DF[:,5])
+
+                        if !(L1Row===nothing || L2Row===nothing)
+
+                                L1Val = SPICE_DF[L1Row,2]
+                                L2Val = SPICE_DF[L2Row,2]
+                                
+                                CouplingCoeff = MakeNumericalVals(Lines[i][Spaces[3]+1:end])
+                                Name = Lines[i][1:Spaces[1]-1]
+                                # println(typeof(L1Row))
+                                SPICE_DF[L1Row,7] = KCount
+                                SPICE_DF[L1Row,8] = L2Row
+                                KCount+=1
+
+                                SPICE_DF[L2Row,7] = KCount
+                                SPICE_DF[L2Row,8] = L1Row
+                                SPICE_DF[L1Row,9] = CouplingCoeff
+                                SPICE_DF[L2Row,9] = CouplingCoeff
+                                SPICE_DF[L1Row,10] = L2Val
+                                SPICE_DF[L2Row,10] = L1Val
+                        end
+                       
+                elseif (Lines[i][1]=='X' || Lines[i][1]=='G') # This is for either standard opamps or voltage controlled current sources in LTSPICE.
+                        
+                        if (Lines[i][Spaces[4]+1:Spaces[5]-1]=="opamp")
+                        # KCount+=1
+                        Node1 = Lines[i][Spaces[1]+1:Spaces[2]-1]
+                        Node2 = Lines[i][Spaces[2]+1:Spaces[3]-1]
+                        Node3 = Lines[i][Spaces[3]+1:Spaces[4]-1]
+                        Node4 = "0"
+                        Name = Lines[i][1:Spaces[1]-1]
+                        GBW = GetSPICEAttr("GBW",Lines[i],Spaces)
+                        
+                        Gain = GetSPICEAttr("Aol",Lines[i],Spaces)
+                        # print(Gain)
+                        push!(SPICE_DF,['G' Gain Node1 Node2 Name 0.0 NaN NaN NaN GBW Node3 Node4])
+                        push!(SPICE_DF,['R' 1 Node3 Node4 "RP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
+                        push!(SPICE_DF,['C' Gain/GBW/(2*pi) Node3 Node4 "CP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
+                        end
                 end
 
 
@@ -77,9 +136,26 @@ e.g.
 function MakeNumericalVals(ValString::String)
         NewString = replace(ValString,"Meg"=>"e6")
         NewString = replace(NewString,"k"=>"e3")
+        NewString = replace(NewString,"K"=>"e3")
         NewString = replace(NewString,"m"=>"e-3")
         NewString = replace(NewString,"u"=>"e-6")
         NewString = replace(NewString, "n"=>"e-9")
         NewString = replace(NewString, "p"=>"e-12")
         return parse(Float64,NewString)
+end
+
+function GetSPICEAttr(NameString::String,Line,Spaces,DefaultVal=0.0)
+        AttrInds = findall(NameString * "=", Line)
+        Value = DefaultVal
+        if length(AttrInds) > 0
+                AttrIndEnd = AttrInds[1][end] + 1
+                if AttrInds[1][end] > maximum(Spaces)
+                        Value = MakeNumericalVals(Line[AttrIndEnd:end])
+                else
+                        Tmp = findfirst(x -> x > AttrIndEnd, Spaces)
+                        Value = MakeNumericalVals(Line[AttrIndEnd:Spaces[Tmp]])
+                end
+
+        end
+        return Value
 end

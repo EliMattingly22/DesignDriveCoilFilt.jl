@@ -9,8 +9,10 @@ This function runs an AC analysis (freq. sweep) for an LTSPICE netlist file.
     FreqList: List of frequencies to test (Hz), Default is 100 Hz to 100kHz in steps of 10
     inputs: vector of independent nodal current inputs (1: NumNodes) and independent V inputs (NumNodes+1:End)
             All voltage inputs default to 1
+    Keyword arg:
+        CompexOutput = false. If true it outputs the result as a complex value, if false (default) it only outputs mag.
 """
-function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothing)
+function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothing;CompexOutput = false)
     # if FileName===nothing
     #         FileName = open_dialog("Pick a file")
     # end
@@ -25,8 +27,11 @@ function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothi
 
     ResultNodeNames = vcat("V(".*NodeList.*")", "I(".*(InputList[end-(NumVSources-1):end]).*")")
 
-
-    Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+    if CompexOutput
+        Results = [ (inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+    else
+        Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+    end
     Results = hcat(Results...)
     ResDict = Dict(ResultNodeNames[1] => Results[1,:])
     for i in 2:length(ResultNodeNames)
