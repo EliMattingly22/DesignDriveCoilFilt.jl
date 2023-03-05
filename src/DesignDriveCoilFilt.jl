@@ -21,7 +21,8 @@ export DesignDriveFilter,
        findResPair,
        findEquivLC,
        Z_Cap,
-       Z_Ind
+       Z_Ind,
+       RunACAnalysis
        
 # Write your package code here.
 

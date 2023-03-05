@@ -10,15 +10,40 @@ This function runs an AC analysis (freq. sweep) for an LTSPICE netlist file.
     inputs: vector of independent nodal current inputs (1: NumNodes) and independent V inputs (NumNodes+1:End)
             All voltage inputs default to 1
     Keyword arg:
-        CompexOutput = false. If true it outputs the result as a complex value, if false (default) it only outputs mag.
+    ComplexOutput = false. If true it outputs the result as a complex value, if false (default) it only outputs mag.
 """
-function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothing;CompexOutput = false)
+function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothing;ComplexOutput = false)
     # if FileName===nothing
     #         FileName = open_dialog("Pick a file")
     # end
 
     SPICE_DF,NodeList,InputList,NumVSources = SPICE2Matrix(FileName)
     # println(InputList)
+    FreqList,Results, ResDict = RunACAnalysis(SPICE_DF,NodeList,InputList,NumVSources, FreqList , inputs;ComplexOutput = ComplexOutput)
+
+
+    return FreqList,Results, ResDict
+
+end
+
+"""
+This function runs an AC analysis (freq. sweep) for a SPICE_DF, NodeList,InputList, ... 
+
+    if no inputs are given, it will prompt for the user to pick a file
+
+    Inputs:
+    SPICE_DF from SPICE2Matrix(FileName)
+    NodeList from SPICE2Matrix(FileName)
+    InputList from SPICE2Matrix(FileName)
+    NumVSources from SPICE2Matrix(FileName)
+    FreqList: List of frequencies to test (Hz), Default is 100 Hz to 100kHz in steps of 10
+    inputs: vector of independent nodal current inputs (1: NumNodes) and independent V inputs (NumNodes+1:End)
+            All voltage inputs default to 1
+    Keyword arg:
+        CompexOutput = false. If true it outputs the result as a complex value, if false (default) it only outputs mag.
+"""
+function RunACAnalysis(SPICE_DF,NodeList,InputList,NumVSources, FreqList = 100:10:100e3, inputs = nothing;ComplexOutput = false)
+  
     if inputs===nothing
         # println("No inputs given")
         inputs = zeros(length(InputList))
@@ -27,7 +52,7 @@ function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothi
 
     ResultNodeNames = vcat("V(".*NodeList.*")", "I(".*(InputList[end-(NumVSources-1):end]).*")")
 
-    if CompexOutput
+    if ComplexOutput
         Results = [ (inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
     else
         Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
@@ -46,6 +71,8 @@ function RunACAnalysis(FileName=nothing, FreqList = 100:10:100e3, inputs = nothi
     return FreqList,Results, ResDict
 
 end
+
+
 
 """
 This function takes in:
