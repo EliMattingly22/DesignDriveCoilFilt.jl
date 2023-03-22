@@ -97,19 +97,33 @@ function LTSpiceLoad(FileName=nothing)
                 elseif (Lines[i][1]=='X' || Lines[i][1]=='G') # This is for either standard opamps or voltage controlled current sources in LTSPICE.
                         
                         if (Lines[i][Spaces[4]+1:Spaces[5]-1]=="opamp")
-                        # KCount+=1
-                        Node1 = Lines[i][Spaces[1]+1:Spaces[2]-1]
-                        Node2 = Lines[i][Spaces[2]+1:Spaces[3]-1]
-                        Node3 = Lines[i][Spaces[3]+1:Spaces[4]-1]
-                        Node4 = "0"
-                        Name = Lines[i][1:Spaces[1]-1]
-                        GBW = GetSPICEAttr("GBW",Lines[i],Spaces)
+                                # KCount+=1
+                                Node1 = Lines[i][Spaces[1]+1:Spaces[2]-1]
+                                Node2 = Lines[i][Spaces[2]+1:Spaces[3]-1]
+                                Node3 = Lines[i][Spaces[3]+1:Spaces[4]-1]
+                                Node4 = "0"
+                                Name = Lines[i][1:Spaces[1]-1]
+                                GBW = GetSPICEAttr("GBW",Lines[i],Spaces)
+                                
+                                Gain = GetSPICEAttr("Aol",Lines[i],Spaces)
+                                # print(Gain)
+                                push!(SPICE_DF,['G' Gain Node1 Node2 Name 0.0 NaN NaN NaN GBW Node3 Node4])
+                                push!(SPICE_DF,['R' 1 Node3 Node4 "RP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
+                                push!(SPICE_DF,['C' Gain/GBW/(2*pi) Node3 Node4 "CP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
                         
-                        Gain = GetSPICEAttr("Aol",Lines[i],Spaces)
-                        # print(Gain)
-                        push!(SPICE_DF,['G' Gain Node1 Node2 Name 0.0 NaN NaN NaN GBW Node3 Node4])
-                        push!(SPICE_DF,['R' 1 Node3 Node4 "RP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
-                        push!(SPICE_DF,['C' Gain/GBW/(2*pi) Node3 Node4 "CP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
+                        elseif (Lines[i][1]=='G')
+                                # KCount+=1
+                                Node3 = Lines[i][Spaces[1]+1:Spaces[2]-1]
+                                Node4 = Lines[i][Spaces[2]+1:Spaces[3]-1]
+                                Node1 = Lines[i][Spaces[3]+1:Spaces[4]-1]
+                                Node2 = Lines[i][Spaces[4]+1:Spaces[5]-1]
+                                Name = Lines[i][1:Spaces[1]-1]
+                                GBW = GetSPICEAttr("GBW",Lines[i],Spaces)
+                                
+                                Gain  = MakeNumericalVals(Lines[i][Spaces[5]+1:end])
+                                # print(Gain)
+                                push!(SPICE_DF,['G' Gain Node1 Node2 Name 0.0 NaN NaN NaN 1e9 Node3 Node4])
+                                
                         end
                 end
 
