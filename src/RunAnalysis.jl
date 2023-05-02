@@ -53,9 +53,17 @@ function RunACAnalysis(SPICE_DF,NodeList,InputList,NumVSources, FreqList = 100:1
     ResultNodeNames = vcat("V(".*NodeList.*")", "I(".*(InputList[end-(NumVSources-1):end]).*")")
 
     if ComplexOutput
-        Results = [ (inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+        if length(size(inputs))==1
+            Results = [ (inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+        else
+            Results = [ (inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs[:,i]) for i in 1:length(FreqList)]
+        end
     else
-        Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+        if length(size(inputs))==1
+            Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs) for i in 1:length(FreqList)]
+        else
+            Results = [ abs.(inv(SPICE_DF2Matrix_ω(SPICE_DF,2*π*FreqList[i],InputList))*inputs[:,i]) for i in 1:length(FreqList)]
+        end
     end
     Results = hcat(Results...)
     ResDict = Dict(ResultNodeNames[1] => Results[1,:])
