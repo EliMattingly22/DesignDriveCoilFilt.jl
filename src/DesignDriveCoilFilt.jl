@@ -22,7 +22,9 @@ export DesignDriveFilter,
        findEquivLC,
        Z_Cap,
        Z_Ind,
-       RunACAnalysis
+       RunACAnalysis,
+       SPICE2Matrix,
+       SPICE_DF2Matrix_ω
        
 # Write your package code here.
 

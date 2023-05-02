@@ -44,6 +44,7 @@ function LTSpiceLoad(FileName=nothing)
                         else
                                 RSerVal=0
                         end
+                        IsNoiseless = !(isempty(findall("noiseless", Lines[i])))
 
                         RParInds = findall("Rpar=", Lines[i])
                         if length(RParInds)>0
@@ -57,7 +58,12 @@ function LTSpiceLoad(FileName=nothing)
                         push!(SPICE_DF,['R' RParVal Node1 Node2 "RP"*Name 0.0 NaN NaN NaN NaN NaN NaN])
                         end
 
-                        push!(SPICE_DF,[Lines[i][1] MakeNumericalVals(Value) Node1 Node2 Name RSerVal NaN NaN NaN NaN NaN NaN])
+                        
+                        if (Lines[i][1]=='R')&IsNoiseless
+                                push!(SPICE_DF,[Lines[i][1] MakeNumericalVals(Value) Node1 Node2 Name RSerVal NaN "noiseless" NaN NaN NaN NaN])
+                        else
+                                push!(SPICE_DF,[Lines[i][1] MakeNumericalVals(Value) Node1 Node2 Name RSerVal NaN NaN NaN NaN NaN NaN])
+                        end
 
                 elseif (Lines[i][1]=='V')
                         Node1 = Lines[i][Spaces[1]+1:Spaces[2]-1]
