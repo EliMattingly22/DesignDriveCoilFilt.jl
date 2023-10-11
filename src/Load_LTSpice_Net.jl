@@ -10,7 +10,11 @@ function LTSpiceLoad(FileName=nothing)
         # if FileName===nothing
         #         FileName = open_dialog("Pick a file")
         # end
-        f =open(FileName)
+        if isfile(FileName)
+                f =open(FileName)
+        else 
+                error("Open the .asc file in LTSPICE and go to View→SPICE Netlist, then make it a read only file so it doesnt delete when LTSPICE closes")
+        end
          Lines =  readlines(f)
 
          close(f)
