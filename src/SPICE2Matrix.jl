@@ -100,26 +100,29 @@ function SPICE_DF2Matrix_ω(DF,ω,InputList)
                 addG!(Y,Z,N1,N2)
             else
                 j = DF.KCount[i]
-                j2 = DF.KCount[DF.Attr1[i]]
-                kVal = DF.Attr2[i]
-                L1Val = DF.Value[i]
-                L2Val = DF.Attr3[i]
-                M = kVal*sqrt(L1Val*L2Val)
-                if N1<999
-                    SrcMat[Rows+j,N1] = 1
-                    SrcMat[N1,Rows+j] = 1
-       
+                Jsec = DF.KCount[DF.Attr1[i]]
+                for ij in eachindex(Jsec)
+                    j2 = Jsec[ij]
+                    kVal = DF.Attr2[i]
+                    L1Val = DF.Value[i]
+                    L2Val = DF.Attr3[i][ij]
+                    M = kVal*sqrt(L1Val*L2Val)
+                    if N1<999
+                        SrcMat[Rows+j,N1] = 1
+                        SrcMat[N1,Rows+j] = 1
+        
+                    end
+                    if N2<999
+        
+                        SrcMat[Rows+j,N2] = -1
+                        SrcMat[N2,Rows+j] = -1
+                    end
+                    ZL1 = im*ω*L1Val
+                    ZL2 = im*ω*L2Val
+                    ZM = im*ω*M
+                    Y[Rows+j,Rows+j] = -1*ZL1
+                    Y[Rows+j,Rows+j2] = -1*ZM
                 end
-                if N2<999
-       
-                    SrcMat[Rows+j,N2] = -1
-                    SrcMat[N2,Rows+j] = -1
-                end
-                ZL1 = im*ω*L1Val
-                ZL2 = im*ω*L2Val
-                ZM = im*ω*M
-                Y[Rows+j,Rows+j] = -1*ZL1
-                Y[Rows+j,Rows+j2] = -1*ZM
                 # SrcMat[Rows+j,Rows+j] = 1
 
             end

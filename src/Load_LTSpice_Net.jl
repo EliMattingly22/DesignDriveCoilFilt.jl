@@ -76,34 +76,36 @@ function LTSpiceLoad(FileName=nothing)
                         push!(SPICE_DF,[Lines[i][1] 1 Node1 Node2 Name 0 NaN NaN NaN NaN NaN NaN])
                 elseif (Lines[i][1]=='K')
                         KCount+=1
-                        L1Name = Lines[i][Spaces[1]+1:Spaces[2]-1]
-                        L1Row = findfirst(L1Name.==SPICE_DF[:,5])
 
-                        
-                        
-                        L2Name = Lines[i][Spaces[2]+1:Spaces[3]-1]
-                        L2Row = findfirst(L2Name.==SPICE_DF[:,5])
+                        NumCoupledComponents = length(Spaces)-1
 
-                        if !(L1Row===nothing || L2Row===nothing)
+                        LNames = [Lines[i][Spaces[jj]+1:Spaces[jj+1]-1] for jj in 1:NumCoupledComponents]
+                        println(LNames)
+                        LRows =  [ findfirst(n.==SPICE_DF[:,5]) for n in LNames]
+                        println(LRows)
+                        LVals = [ SPICE_DF[r,2] for r in LRows]
+                        println(LVals)
+                        CouplingCoeff = MakeNumericalVals(Lines[i][Spaces[end]+1:end])
+                        for ii in 1:length(LNames)
 
-                                L1Val = SPICE_DF[L1Row,2]
-                                L2Val = SPICE_DF[L2Row,2]
-                                
-                                CouplingCoeff = MakeNumericalVals(Lines[i][Spaces[3]+1:end])
-                                Name = Lines[i][1:Spaces[1]-1]
-                                # println(typeof(L1Row))
-                                SPICE_DF[L1Row,7] = KCount
-                                SPICE_DF[L1Row,8] = L2Row
-                                KCount+=1
+                                if !(any(LRows.===nothing))
 
-                                SPICE_DF[L2Row,7] = KCount
-                                SPICE_DF[L2Row,8] = L1Row
-                                SPICE_DF[L1Row,9] = CouplingCoeff
-                                SPICE_DF[L2Row,9] = CouplingCoeff
-                                SPICE_DF[L1Row,10] = L2Val
-                                SPICE_DF[L2Row,10] = L1Val
+                                        Name = LNames[ii]
+                                        Row = LRows[ii]
+                                        OtherInds = filter(x->!(x==ii),collect(1:length(LNames)))
+                                        OtherNames = filter(x->!(x==Name),LNames)
+                                        OtherRows = filter(x->!(x==Row),LRows)
+                                        OtherVals = LVals[OtherInds]
+                                        println(OtherVals)
+                                        SPICE_DF[Row,7] = KCount
+                                        SPICE_DF[Row,8] = OtherRows
+                                        SPICE_DF[Row,9] = CouplingCoeff
+                                        
+                                        SPICE_DF[Row,10] = OtherVals
+                                        
+                                        KCount+=1
+                                end
                         end
-                       
                 elseif (Lines[i][1]=='X' || Lines[i][1]=='G') # This is for either standard opamps or voltage controlled current sources in LTSPICE.
                         
                         if (Lines[i][Spaces[4]+1:Spaces[5]-1]=="opamp")
@@ -163,8 +165,11 @@ function MakeNumericalVals(ValString::String)
         NewString = replace(NewString,"K"=>"e3")
         NewString = replace(NewString,"m"=>"e-3")
         NewString = replace(NewString,"u"=>"e-6")
+        NewString = replace(NewString,"\xb5"=>"e-6")
+        
         NewString = replace(NewString, "n"=>"e-9")
         NewString = replace(NewString, "p"=>"e-12")
+        NewString = replace(NewString, "f"=>"e-15")
         return parse(Float64,NewString)
 end
 
