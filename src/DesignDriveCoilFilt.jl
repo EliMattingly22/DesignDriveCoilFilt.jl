@@ -3,19 +3,22 @@ using FFTW,PyPlot,Optim
 using LinearAlgebra
 using PyPlot
 using CSV
+using jlSPICE
 
 # using Interpolations
 
-include("Load_LTSpice_Net.jl")
-include("RunAnalysis.jl")
-include("SPICE2Matrix.jl")
+# include("Load_LTSpice_Net.jl")
+# include("RunAnalysis.jl")
+# include("SPICE2Matrix.jl")
 include("ToroidOptimizer.jl")
 include("Filter_Designer.jl")
 include("ThermalModeling.jl")
 include("WriteLTSPICEFile.jl")
-include("ImpedanceTransformations.jl")
+# include("ImpedanceTransformations.jl")
 include("SaveToroidSVG.jl")
-include("ToleranceAnalysisTools.jl")
+# include("ToleranceAnalysisTools.jl")
+# Par = jlSPICE.Par
+
 export DesignDriveFilter,
        ToroidOptimizer,
        PipeFlow,
