@@ -187,7 +187,8 @@ function DesignDriveFilter(
     else
         LNotch = 1e-9
         CNotch = C_Par_2
-       
+        LNotch_ESR = 1e-3
+
         LNotch2 = 10 #Set default values is no notch is added
         CNotch2 = 1e-12 
         LNotch2_ESR = 1e-3

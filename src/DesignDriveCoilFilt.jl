@@ -19,6 +19,10 @@ include("SaveToroidSVG.jl")
 # include("ToleranceAnalysisTools.jl")
 # Par = jlSPICE.Par
 
+plotACElCurrent = jlSPICE.plotACElCurrent
+getElementCurrents = jlSPICE.getElementCurrents
+DetermineComponentsTempCoeffs = jlSPICE.DetermineComponentsTempCoeffs
+
 export DesignDriveFilter,
        ToroidOptimizer,
        PipeFlow,
