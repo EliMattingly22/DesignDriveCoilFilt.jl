@@ -110,7 +110,14 @@ function ToroidOptimizer(
     # TurnsD = sqrt(2*pi*L/(T*μ*B)); #Turns needed in a D shaped core toroid
     # ID_DToroid = 2*B;
     # B = WireLength_D/(Turns_D*P); #B=inner radius, so B = total length/(number of turns*Perimeter of each turn)
-    B = Dia / 2 + Turns_D * Dia / (2 * pi) #Making it so that the wires all tough on the inner edge of the core
+    B = Dia / 2 + Turns_D * Dia / (2 * pi) #Making it so that the wires all touch on the inner edge of the core
+    
+    if NumLayers>1
+        IDVec = MultiLayerToroid_ID_Calc(NumLayers,B*2,Dia)[end] #Updating the ID so that the innermost layer have all wires densely packed
+    else
+        IDVec = B*2
+    end
+
     ## For the following reference Fig 4 in "D-Shaped toroidal cage inductors" P.N. Murgatroyd & D. Belahrache,1989
     FlatHeight = B * AlphaMat[Alpha-1, 2]
     MaxHeight = B * AlphaMat[Alpha-1, 3] #Height from CENTER LINE, so the actual core is 2 times as tall overall. This is the half-height effectively
@@ -125,7 +132,7 @@ function ToroidOptimizer(
         FlatHeight,
         MaxHeight,
         RadiusAtPeak,
-        ID,
+        IDVec[end], #using the new ID that accounts for the windings piling together on the inner surface
         OD,
         round(Turns),
         Layers,
@@ -347,3 +354,19 @@ function CircCore_DetermineIdealInduct(IRad,N,α)
     return 1e-6*(0.01257*N^2*(R-√*(R^2-a^2)))
 end
 
+function MultiLayerToroid_ID_Calc(Layers,ID,WireDia)
+
+  
+    IRad = ID/2
+    Φ = asin(WireDia/(2*IRad))
+    
+    IRadVec = zeros(Layers,1)
+    IRadVec[1] = IRad
+
+    for i in 2:Layers
+        IRadVec[i] = IRadVec[i-1] * cos(Φ) + sqrt(WireDia^2 - IRadVec[i-1]^2 * sin(Φ)^2)
+    end
+
+    return IRadVec*2
+
+end
